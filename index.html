@@ -21,12 +21,30 @@
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
+        /* Definitive Button Styles */
         .tab-btn, .team-filter-btn {
-            @apply p-2 px-4 text-center font-semibold rounded-lg transition-all duration-200 cursor-pointer bg-slate-800/70 border border-slate-600 text-slate-100 hover:bg-slate-700;
+            background-color: rgba(30, 41, 59, 0.7); /* bg-slate-800/70 */
+            border: 1px solid #475569; /* border-slate-600 */
+            color: #FFFFFF; /* White text */
+            font-size: 1rem; /* Larger font size */
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+        }
+        .tab-btn:hover, .team-filter-btn:hover {
+            background-color: #475569; /* bg-slate-600 */
+            border-color: #64748b; /* border-slate-500 */
         }
         .tab-btn.active, .team-filter-btn.active {
-            @apply bg-white text-blue-800 font-bold shadow-lg scale-105 border-white;
+            background-color: #FFFFFF;
+            color: #1e3a8a; /* text-blue-800 */
+            font-weight: 700;
+            transform: scale(1.05);
+            border-color: #FFFFFF;
         }
+
         .color-indicator {
             width: 1rem;
             height: 1rem;
@@ -157,6 +175,7 @@
         ];
         
         let annualTableData = [];
+        let baseTableForSim;
         const headerTeams = ['Talleres', 'Sarmiento', 'San Martín SJ', 'Aldosivi', 'Godoy Cruz'];
 
         // --- UTILS ---
@@ -261,7 +280,7 @@
         
         const recalculateTable = () => {
             // Start with a deep copy of the base table data
-            let tempTable = JSON.parse(JSON.stringify(initialAnnualTableData));
+            let tempTable = JSON.parse(JSON.stringify(baseTableForSim));
             
             // Apply the results of all matches in the fixture
             allMatches.forEach(match => {
@@ -302,23 +321,24 @@
         
         // --- INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', () => {
-            // Create a deep copy of the original table data to be used as the base for recalculations
-            let baseTableData = JSON.parse(JSON.stringify(initialAnnualTableData));
+            // This is our true starting point for simulations, a deep copy.
+            baseTableForSim = JSON.parse(JSON.stringify(initialAnnualTableData));
             
-            // Adjust the base data by removing the stats of the one historical match,
-            // because the recalculateTable function will add it back in.
-            const historicalMatch = allMatches.find(m => m.isHistorical);
-            if(historicalMatch) {
-                const homeTeam = baseTableData.find(t => t.team === historicalMatch.home);
-                const awayTeam = baseTableData.find(t => t.team === historicalMatch.away);
+            // Adjust the base data by REMOVING the stats of any historical matches,
+            // because the recalculateTable function will add them back in.
+            allMatches.filter(m => m.isHistorical).forEach(match => {
+                const homeTeam = baseTableForSim.find(t => t.team === match.home);
+                const awayTeam = baseTableForSim.find(t => t.team === match.away);
                  if(homeTeam && awayTeam){
+                    const [homeScore, awayScore] = match.result.split('-').map(Number);
                      homeTeam.pj -= 1; awayTeam.pj -= 1;
-                     homeTeam.pe -= 1; awayTeam.pe -= 1;
-                     homeTeam.pts -= 1; awayTeam.pts -= 1;
+                     homeTeam.gf -= homeScore; awayTeam.gf -= awayScore;
+                     homeTeam.gc -= awayScore; awayTeam.gc -= homeScore;
+                     if (homeScore > awayScore) { homeTeam.pg -= 1; homeTeam.pts -= 3; awayTeam.pp -= 1; } 
+                     else if (awayScore > homeScore) { awayTeam.pg -= 1; awayTeam.pts -= 3; homeTeam.pp -= 1; } 
+                     else { homeTeam.pe -= 1; awayTeam.pe -= 1; homeTeam.pts -= 1; awayTeam.pts -= 1; }
                 }
-            }
-            // This is now our true starting point for simulations
-            initialAnnualTableData = baseTableData;
+            });
 
             renderFilterButtons();
             recalculateTable(); // Initial calculation
