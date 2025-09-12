@@ -22,10 +22,10 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
         .tab-btn, .team-filter-btn {
-            @apply p-2 px-4 text-center font-semibold rounded-lg transition-all duration-200 cursor-pointer bg-transparent text-slate-400 hover:bg-slate-800;
+            @apply p-2 px-4 text-center font-semibold rounded-lg transition-all duration-200 cursor-pointer bg-slate-800/70 border border-slate-600 text-white hover:bg-slate-700;
         }
         .tab-btn.active, .team-filter-btn.active {
-            @apply bg-slate-200 text-blue-700 font-bold shadow-lg;
+            @apply bg-white text-blue-800 font-bold shadow-lg scale-105 border-white;
         }
         .color-indicator {
             width: 1rem;
@@ -77,6 +77,7 @@
         <div id="fixture-container" class="tab-content">
             <div id="filter-buttons-container" class="flex flex-wrap gap-2 justify-center mb-6"></div>
             <div class="overflow-x-auto">
+                 <div id="loader-fixture" class="text-center text-white py-4">Cargando partidos...</div>
                 <table class="min-w-full table-auto border-collapse">
                     <thead class="bg-slate-800/50"><tr class="table-custom-header">
                         <th class="rounded-tl-lg text-left text-slate-300">Local</th>
@@ -94,6 +95,7 @@
         <!-- Annual Table Container -->
         <div id="annual-table-container" class="tab-content hidden">
             <div class="overflow-x-auto">
+                 <div id="loader-table" class="text-center text-white py-4">Cargando tabla...</div>
                 <table class="min-w-full table-auto border-collapse">
                     <thead class="bg-slate-800/50"><tr class="table-custom-header text-sm">
                         <th class="rounded-tl-lg text-center text-slate-300">Pos</th>
@@ -113,8 +115,31 @@
         </div>
     </div>
 
-    <script>
-        // --- DATA ---
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, getDocs, onSnapshot, writeBatch, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- FIREBASE CONFIG (WILL BE PROVIDED BY THE ENVIRONMENT) ---
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        // --- INITIALIZE FIREBASE ---
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- COLLECTIONS ---
+        const matchesRef = collection(db, `artifacts/${appId}/public/data/matches`);
+        const teamsRef = collection(db, `artifacts/${appId}/public/data/teams`);
+
+        // --- LOCAL STATE ---
+        let allMatches = [];
+        let annualTableData = [];
+        let initialAnnualTableData = []; // Will hold the base data for recalculation
+        const headerTeams = ['Talleres', 'Sarmiento', 'San Martín SJ', 'Aldosivi', 'Godoy Cruz'];
+
+        // --- STATIC DATA (for initial seeding) ---
         const teamColors = {
             'Talleres': { initials: 'TAL', primary: '#001F5B', secondary: '#FFFFFF', type: 'five-stripes' },
             'Sarmiento': { initials: 'SAR', primary: '#007F3F', secondary: '#FFFFFF', type: 'single' },
@@ -147,104 +172,22 @@
             'Boca Jrs.': { initials: 'BOC', primary: '#003472', secondary: '#FDB913', type: 'horizontal-stripe' },
             'Racing': { initials: 'RAC', primary: '#75AADB', secondary: '#FFFFFF', type: 'vertical-stripes' }
         };
-
-        const allMatches = [
-            // Fecha 8
-            { id: 1, home: 'Godoy Cruz', away: 'Barracas Central', date: '13/09', time: '12:30', jornada: 8, result: null },
-            { id: 2, home: 'Sarmiento', away: 'Aldosivi', date: '13/09', time: '19:15', jornada: 8, result: null },
-            { id: 3, home: 'Tigre', away: 'Talleres', date: '14/09', time: '18:00', jornada: 8, result: null },
-            { id: 31, home: 'Defensa y Justicia', away: 'San Martín SJ', date: '15/09', time: '17:00', jornada: 8, result: null },
-            // Fecha 9
-            { id: 4, home: 'San Martín SJ', away: 'Vélez Sarsfield', date: '19/09', time: '17:15', jornada: 9, result: null },
-            { id: 5, home: 'Barracas Central', away: 'Sarmiento', date: '20/09', time: '12:30', jornada: 9, result: null },
-            { id: 6, home: 'Tigre', away: 'Aldosivi', date: '20/09', time: '17:00', jornada: 9, result: null },
-            { id: 7, home: 'Godoy Cruz', away: 'Instituto', date: '21/09', time: '14:45', jornada: 9, result: null },
-            { id: 8, home: 'Rosario Central', away: 'Talleres', date: '21/09', time: '17:00', jornada: 9, result: null },
-            // Fecha 10
-            { id: 9, home: 'Platense', away: 'San Martín SJ', date: '26/09', time: '20:00', jornada: 10, result: null },
-            { id: 10, home: 'Aldosivi', away: 'Argentinos Jrs', date: '27/09', time: '12:30', jornada: 10, result: null },
-            { id: 11, home: 'San Lorenzo', away: 'Godoy Cruz', date: '27/09', time: '14:45', jornada: 10, result: null },
-            { id: 12, home: 'Talleres', away: 'Sarmiento', date: '27/09', time: '19:15', jornada: 10, result: null },
-            // Fecha 11
-            { id: 13, home: 'Godoy Cruz', away: 'Independiente', date: '05/10', time: '12:00', jornada: 11, result: null },
-            { id: 14, home: 'Talleres', away: 'Belgrano', date: '05/10', time: '17:00', jornada: 11, result: null },
-            { id: 15, home: 'Sarmiento', away: 'Gimnasia', date: '05/10', time: '17:00', jornada: 11, result: null },
-            { id: 32, home: 'San Martín SJ', away: 'Instituto', date: '06/10', time: '19:00', jornada: 11, result: null },
-            { id: 33, home: 'Unión', away: 'Aldosivi', date: '07/10', time: '21:00', jornada: 11, result: null },
-            // Fecha 12
-            { id: 16, home: 'Independiente Rivadavia', away: 'Godoy Cruz', date: '12/10', time: '12:00', jornada: 12, result: null },
-            { id: 17, home: 'Aldosivi', away: 'Huracán', date: '12/10', time: '17:00', jornada: 12, result: null },
-            { id: 18, home: 'Gimnasia', away: 'Talleres', date: '12/10', time: '20:00', jornada: 12, result: null },
-            { id: 34, home: 'River Plate', away: 'Sarmiento', date: '13/10', time: '21:00', jornada: 12, result: null },
-            { id: 35, home: 'San Lorenzo', away: 'San Martín SJ', date: '14/10', time: '17:00', jornada: 12, result: null },
-            // Fecha 13
-            { id: 19, home: 'Lanús', away: 'Godoy Cruz', date: '19/10', time: '17:00', jornada: 13, result: null },
-            { id: 20, home: 'Sarmiento', away: 'Vélez Sarsfield', date: '19/10', time: '17:00', jornada: 13, result: null },
-            { id: 21, home: 'Talleres', away: 'River Plate', date: '19/10', time: '21:00', jornada: 13, result: null },
-            { id: 36, home: 'Independiente', away: 'San Martín SJ', date: '20/10', time: '19:00', jornada: 13, result: null },
-            { id: 37, home: 'Defensa y Justicia', away: 'Aldosivi', date: '21/10', time: '17:00', jornada: 13, result: null },
-            // Fecha 14
-            { id: 22, home: 'Godoy Cruz', away: 'San Martín SJ', date: '26/10', time: '19:00', jornada: 14, result: null },
-            { id: 23, home: 'Vélez Sarsfield', away: 'Talleres', date: '26/10', time: '19:00', jornada: 14, result: null },
-            { id: 24, home: 'Platense', away: 'Sarmiento', date: '26/10', time: '19:00', jornada: 14, result: null },
-            { id: 38, home: 'Aldosivi', away: 'Estudiantes', date: '27/10', time: '17:00', jornada: 14, result: null },
-            // Fecha 15
-            { id: 25, home: 'Atlético Tucumán', away: 'Godoy Cruz', date: '02/11', time: '20:00', jornada: 15, result: null },
-            { id: 26, home: 'Talleres', away: 'Platense', date: '02/11', time: '17:00', jornada: 15, result: null },
-            { id: 27, home: 'Sarmiento', away: 'Instituto', date: '02/11', time: '17:00', jornada: 15, result: null },
-            { id: 39, home: 'Lanús', away: 'San Martín SJ', date: '03/11', time: '19:00', jornada: 15, result: null },
-            { id: 40, home: 'Rosario Central', away: 'Aldosivi', date: '04/11', time: '21:00', jornada: 15, result: null },
-            // Fecha 16
-            { id: 28, home: 'Deportivo Riestra', away: 'Godoy Cruz', date: '09/11', time: '17:00', jornada: 16, result: null },
-            { id: 29, home: 'Instituto', away: 'Talleres', date: '09/11', time: '17:00', jornada: 16, result: null },
-            { id: 30, home: 'Aldosivi', away: 'San Martín SJ', date: '09/11', time: '20:00', jornada: 16, result: null },
-            { id: 41, home: 'San Lorenzo', away: 'Sarmiento', date: '10/11', time: '19:00', jornada: 16, result: null },
+        const initialMatchesData = [
+            { id: 1, home: 'Godoy Cruz', away: 'Barracas Central', date: '13/09', time: '12:30', jornada: 8, result: null }, { id: 2, home: 'Sarmiento', away: 'Aldosivi', date: '13/09', time: '19:15', jornada: 8, result: null }, { id: 3, home: 'Tigre', away: 'Talleres', date: '14/09', time: '18:00', jornada: 8, result: null }, { id: 31, home: 'Belgrano', away: 'San Martín SJ', date: '14/09', time: '15:00', jornada: 8, result: '0-0', isHistorical: true }, { id: 4, home: 'San Martín SJ', away: 'Vélez Sarsfield', date: '19/09', time: '17:15', jornada: 9, result: null }, { id: 5, home: 'Barracas Central', away: 'Sarmiento', date: '20/09', time: '12:30', jornada: 9, result: null }, { id: 6, home: 'Tigre', away: 'Aldosivi', date: '20/09', time: '17:00', jornada: 9, result: null }, { id: 7, home: 'Godoy Cruz', away: 'Instituto', date: '21/09', time: '14:45', jornada: 9, result: null }, { id: 8, home: 'Rosario Central', away: 'Talleres', date: '21/09', time: '17:00', jornada: 9, result: null }, { id: 9, home: 'Platense', away: 'San Martín SJ', date: '26/09', time: '20:00', jornada: 10, result: null }, { id: 10, home: 'Aldosivi', away: 'Argentinos Jrs', date: '27/09', time: '12:30', jornada: 10, result: null }, { id: 11, home: 'San Lorenzo', away: 'Godoy Cruz', date: '27/09', time: '14:45', jornada: 10, result: null }, { id: 12, home: 'Talleres', away: 'Sarmiento', date: '27/09', time: '19:15', jornada: 10, result: null }, { id: 13, home: 'Godoy Cruz', away: 'Independiente', date: '05/10', time: '12:00', jornada: 11, result: null }, { id: 14, home: 'Talleres', away: 'Belgrano', date: '05/10', time: '17:00', jornada: 11, result: null }, { id: 15, home: 'Sarmiento', away: 'Gimnasia', date: '05/10', time: '17:00', jornada: 11, result: null }, { id: 32, home: 'San Martín SJ', away: 'Instituto', date: '06/10', time: '19:00', jornada: 11, result: null }, { id: 33, home: 'Unión', away: 'Aldosivi', date: '07/10', time: '21:00', jornada: 11, result: null }, { id: 16, home: 'Independiente Rivadavia', away: 'Godoy Cruz', date: '12/10', time: '12:00', jornada: 12, result: null }, { id: 17, home: 'Aldosivi', away: 'Huracán', date: '12/10', time: '17:00', jornada: 12, result: null }, { id: 18, home: 'Gimnasia', away: 'Talleres', date: '12/10', time: '20:00', jornada: 12, result: null }, { id: 34, home: 'River Plate', away: 'Sarmiento', date: '13/10', time: '21:00', jornada: 12, result: null }, { id: 35, home: 'San Lorenzo', away: 'San Martín SJ', date: '14/10', time: '17:00', jornada: 12, result: null }, { id: 19, home: 'Lanús', away: 'Godoy Cruz', date: '19/10', time: '17:00', jornada: 13, result: null }, { id: 20, home: 'Sarmiento', away: 'Vélez Sarsfield', date: '19/10', time: '17:00', jornada: 13, result: null }, { id: 21, home: 'Talleres', away: 'River Plate', date: '19/10', time: '21:00', jornada: 13, result: null }, { id: 36, home: 'Independiente', away: 'San Martín SJ', date: '20/10', time: '19:00', jornada: 13, result: null }, { id: 37, home: 'Defensa y Justicia', away: 'Aldosivi', date: '21/10', time: '17:00', jornada: 13, result: null }, { id: 22, home: 'Godoy Cruz', away: 'San Martín SJ', date: '26/10', time: '19:00', jornada: 14, result: null }, { id: 23, home: 'Vélez Sarsfield', away: 'Talleres', date: '26/10', time: '19:00', jornada: 14, result: null }, { id: 24, home: 'Platense', away: 'Sarmiento', date: '26/10', time: '19:00', jornada: 14, result: null }, { id: 38, home: 'Aldosivi', away: 'Estudiantes', date: '27/10', time: '17:00', jornada: 14, result: null }, { id: 25, home: 'Atlético Tucumán', away: 'Godoy Cruz', date: '02/11', time: '20:00', jornada: 15, result: null }, { id: 26, home: 'Talleres', away: 'Platense', date: '02/11', time: '17:00', jornada: 15, result: null }, { id: 27, home: 'Sarmiento', away: 'Instituto', date: '02/11', time: '17:00', jornada: 15, result: null }, { id: 39, home: 'Lanús', away: 'San Martín SJ', date: '03/11', time: '19:00', jornada: 15, result: null }, { id: 40, home: 'Rosario Central', away: 'Aldosivi', date: '04/11', time: '21:00', jornada: 15, result: null }, { id: 28, home: 'Deportivo Riestra', away: 'Godoy Cruz', date: '09/11', time: '17:00', jornada: 16, result: null }, { id: 29, home: 'Instituto', away: 'Talleres', date: '09/11', time: '17:00', jornada: 16, result: null }, { id: 30, home: 'Aldosivi', away: 'San Martín SJ', date: '09/11', time: '20:00', jornada: 16, result: null }, { id: 41, home: 'San Lorenzo', away: 'Sarmiento', date: '10/11', time: '19:00', jornada: 16, result: null },
         ];
-
-        const initialAnnualTableData = [
-            { pos: 1, team: 'River Plate', pts: 46, pj: 23, pg: 12, pe: 10, pp: 1, gf: 35, gc: 13, dg: 22 },
-            { pos: 2, team: 'Boca Jrs.', pts: 45, pj: 23, pg: 13, pe: 6, pp: 4, gf: 33, gc: 14, dg: 19 },
-            { pos: 3, team: 'Rosario Central', pts: 45, pj: 22, pg: 12, pe: 9, pp: 1, gf: 26, gc: 10, dg: 16 },
-            { pos: 4, team: 'Argentinos Jrs', pts: 41, pj: 23, pg: 11, pe: 8, pp: 4, gf: 31, gc: 15, dg: 16 },
-            { pos: 5, team: 'Deportivo Riestra', pts: 40, pj: 24, pg: 10, pe: 10, pp: 4, gf: 24, gc: 12, dg: 12 },
-            { pos: 6, team: 'San Lorenzo', pts: 40, pj: 24, pg: 10, pe: 10, pp: 4, gf: 19, gc: 13, dg: 6 },
-            { pos: 7, team: 'Barracas Central', pts: 40, pj: 23, pg: 11, pe: 7, pp: 5, gf: 31, gc: 26, dg: 5 },
-            { pos: 8, team: 'Huracán', pts: 39, pj: 24, pg: 10, pe: 9, pp: 5, gf: 24, gc: 18, dg: 6 },
-            { pos: 9, team: 'Tigre', pts: 35, pj: 23, pg: 10, pe: 5, pp: 8, gf: 24, gc: 19, dg: 5 },
-            { pos: 10, team: 'Independiente Rivadavia', pts: 35, pj: 23, pg: 9, pe: 8, pp: 6, gf: 28, gc: 26, dg: 2 },
-            { pos: 11, team: 'Racing', pts: 33, pj: 24, pg: 10, pe: 3, pp: 11, gf: 32, gc: 28, dg: 4 },
-            { pos: 12, team: 'Estudiantes', pts: 33, pj: 23, pg: 9, pe: 6, pp: 8, gf: 26, gc: 27, dg: -1 },
-            { pos: 13, team: 'Independiente', pts: 32, pj: 22, pg: 8, pe: 8, pp: 6, gf: 27, gc: 19, dg: 8 },
-            { pos: 14, team: 'Central Córdoba', pts: 31, pj: 24, pg: 8, pe: 7, pp: 9, gf: 31, gc: 28, dg: 3 },
-            { pos: 15, team: 'Defensa y Justicia', pts: 31, pj: 23, pg: 8, pe: 7, pp: 8, gf: 26, gc: 27, dg: -1 },
-            { pos: 16, team: 'Lanús', pts: 30, pj: 23, pg: 7, pe: 9, pp: 7, gf: 19, gc: 18, dg: 1 },
-            { pos: 17, team: 'Platense', pts: 29, pj: 22, pg: 7, pe: 8, pp: 7, gf: 18, gc: 19, dg: -1 },
-            { pos: 18, team: 'Vélez Sarsfield', pts: 29, pj: 24, pg: 8, pe: 5, pp: 11, gf: 16, gc: 25, dg: -9 },
-            { pos: 19, team: 'Unión', pts: 26, pj: 23, pg: 6, pe: 8, pp: 9, gf: 21, gc: 22, dg: -1 },
-            { pos: 20, team: 'Gimnasia', pts: 26, pj: 23, pg: 7, pe: 5, pp: 11, gf: 14, gc: 23, dg: -9 },
-            { pos: 21, team: 'Belgrano', pts: 26, pj: 24, pg: 5, pe: 11, pp: 8, gf: 19, gc: 30, dg: -11 },
-            { pos: 22, team: 'Atlético Tucumán', pts: 25, pj: 23, pg: 7, pe: 4, pp: 12, gf: 25, gc: 27, dg: -2 },
-            { pos: 23, team: 'Newell\'s', pts: 25, pj: 23, pg: 6, pe: 7, pp: 10, gf: 18, gc: 23, dg: -5 },
-            { pos: 24, team: 'Banfield', pts: 24, pj: 23, pg: 6, pe: 6, pp: 11, gf: 22, gc: 29, dg: -7 },
-            { pos: 25, team: 'Instituto', pts: 24, pj: 23, pg: 6, pe: 6, pp: 11, gf: 18, gc: 30, dg: -12 },
-            { pos: 26, team: 'Godoy Cruz', pts: 23, pj: 23, pg: 4, pe: 11, pp: 8, gf: 15, gc: 28, dg: -13 },
-            { pos: 27, team: 'Sarmiento', pts: 21, pj: 22, pg: 3, pe: 12, pp: 7, gf: 16, gc: 28, dg: -12 },
-            { pos: 28, team: 'Talleres', pts: 18, pj: 23, pg: 3, pe: 9, pp: 11, gf: 14, gc: 23, dg: -9 },
-            { pos: 29, team: 'San Martín SJ', pts: 18, pj: 24, pg: 4, pe: 6, pp: 14, gf: 10, gc: 25, dg: -15 },
-            { pos: 30, team: 'Aldosivi', pts: 18, pj: 23, pg: 4, pe: 6, pp: 13, gf: 19, gc: 36, dg: -17 },
+        const initialTableData = [
+            { pos: 1, team: 'River Plate', pts: 46, pj: 23, pg: 12, pe: 10, pp: 1, gf: 35, gc: 13, dg: 22 }, { pos: 2, team: 'Boca Jrs.', pts: 45, pj: 23, pg: 13, pe: 6, pp: 4, gf: 33, gc: 14, dg: 19 }, { pos: 3, team: 'Rosario Central', pts: 45, pj: 22, pg: 12, pe: 9, pp: 1, gf: 26, gc: 10, dg: 16 }, { pos: 4, team: 'Argentinos Jrs', pts: 41, pj: 23, pg: 11, pe: 8, pp: 4, gf: 31, gc: 15, dg: 16 }, { pos: 5, team: 'Deportivo Riestra', pts: 40, pj: 24, pg: 10, pe: 10, pp: 4, gf: 24, gc: 12, dg: 12 }, { pos: 6, team: 'San Lorenzo', pts: 40, pj: 24, pg: 10, pe: 10, pp: 4, gf: 19, gc: 13, dg: 6 }, { pos: 7, team: 'Barracas Central', pts: 40, pj: 23, pg: 11, pe: 7, pp: 5, gf: 31, gc: 26, dg: 5 }, { pos: 8, team: 'Huracán', pts: 39, pj: 24, pg: 10, pe: 9, pp: 5, gf: 24, gc: 18, dg: 6 }, { pos: 9, team: 'Tigre', pts: 35, pj: 23, pg: 10, pe: 5, pp: 8, gf: 24, gc: 19, dg: 5 }, { pos: 10, team: 'Independiente Rivadavia', pts: 35, pj: 23, pg: 9, pe: 8, pp: 6, gf: 28, gc: 26, dg: 2 }, { pos: 11, team: 'Racing', pts: 33, pj: 24, pg: 10, pe: 3, pp: 11, gf: 32, gc: 28, dg: 4 }, { pos: 12, team: 'Estudiantes', pts: 33, pj: 23, pg: 9, pe: 6, pp: 8, gf: 26, gc: 27, dg: -1 }, { pos: 13, team: 'Independiente', pts: 32, pj: 22, pg: 8, pe: 8, pp: 6, gf: 27, gc: 19, dg: 8 }, { pos: 14, team: 'Central Córdoba', pts: 31, pj: 24, pg: 8, pe: 7, pp: 9, gf: 31, gc: 28, dg: 3 }, { pos: 15, team: 'Defensa y Justicia', pts: 31, pj: 23, pg: 8, pe: 7, pp: 8, gf: 26, gc: 27, dg: -1 }, { pos: 16, team: 'Lanús', pts: 30, pj: 23, pg: 7, pe: 9, pp: 7, gf: 19, gc: 18, dg: 1 }, { pos: 17, team: 'Platense', pts: 29, pj: 22, pg: 7, pe: 8, pp: 7, gf: 18, gc: 19, dg: -1 }, { pos: 18, team: 'Vélez Sarsfield', pts: 29, pj: 24, pg: 8, pe: 5, pp: 11, gf: 16, gc: 25, dg: -9 }, { pos: 19, team: 'Unión', pts: 26, pj: 23, pg: 6, pe: 8, pp: 9, gf: 21, gc: 22, dg: -1 }, { pos: 20, team: 'Gimnasia', pts: 26, pj: 23, pg: 7, pe: 5, pp: 11, gf: 14, gc: 23, dg: -9 }, { pos: 21, team: 'Belgrano', pts: 26, pj: 24, pg: 5, pe: 11, pp: 8, gf: 19, gc: 30, dg: -11 }, { pos: 22, team: 'Atlético Tucumán', pts: 25, pj: 23, pg: 7, pe: 4, pp: 12, gf: 25, gc: 27, dg: -2 }, { pos: 23, team: 'Newell\'s', pts: 25, pj: 23, pg: 6, pe: 7, pp: 10, gf: 18, gc: 23, dg: -5 }, { pos: 24, team: 'Banfield', pts: 24, pj: 23, pg: 6, pe: 6, pp: 11, gf: 22, gc: 29, dg: -7 }, { pos: 25, team: 'Instituto', pts: 24, pj: 23, pg: 6, pe: 6, pp: 11, gf: 18, gc: 30, dg: -12 }, { pos: 26, team: 'Godoy Cruz', pts: 23, pj: 23, pg: 4, pe: 11, pp: 8, gf: 15, gc: 28, dg: -13 }, { pos: 27, team: 'Sarmiento', pts: 21, pj: 22, pg: 3, pe: 12, pp: 7, gf: 16, gc: 28, dg: -12 }, { pos: 28, team: 'Talleres', pts: 18, pj: 23, pg: 3, pe: 9, pp: 11, gf: 14, gc: 23, dg: -9 }, { pos: 29, team: 'San Martín SJ', pts: 18, pj: 24, pg: 4, pe: 6, pp: 14, gf: 10, gc: 25, dg: -15 }, { pos: 30, team: 'Aldosivi', pts: 18, pj: 23, pg: 4, pe: 6, pp: 13, gf: 19, gc: 36, dg: -17 },
         ];
-        let annualTableData = JSON.parse(JSON.stringify(initialAnnualTableData));
-        const headerTeams = ['Talleres', 'Sarmiento', 'San Martín SJ', 'Aldosivi', 'Godoy Cruz'];
-
+        
         // --- UTILS ---
-        const getTeamInitials = (teamName) => teamColors[teamName]?.initials || teamName;
-        const getDayOfWeek = (dateString) => { const [d, m] = dateString.split('/'); const date = new Date(new Date().getFullYear(), m - 1, d); return isNaN(date.getTime()) ? '' : ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'][date.getDay()]; };
-        const getTeamColorDiv = (teamName) => {
+        window.getTeamInitials = (teamName) => teamColors[teamName]?.initials || teamName;
+        window.getDayOfWeek = (dateString) => { const [d, m] = dateString.split('/'); const date = new Date(new Date().getFullYear(), m - 1, d); return isNaN(date.getTime()) ? '' : ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'][date.getDay()]; };
+        window.getTeamColorDiv = (teamName) => {
             const c = teamColors[teamName]; if (!c) return `<div class="color-indicator" style="background-color: transparent; border: 1px solid #ccc;"></div>`;
             const style = `--color1: ${c.primary}; --color2: ${c.secondary};` + (c.tertiary ? ` --color3: ${c.tertiary};` : '');
             return `<div class="color-indicator ${c.type === 'single' ? 'team-color-single' : `color-${c.type}`}" style="${style}"></div>`;
         };
-        const renderTeamDisplay = (teamName, alignClass = '', isFixture = false) => {
+        window.renderTeamDisplay = (teamName, alignClass = '', isFixture = false) => {
             const fontSizeClass = isFixture ? 'text-lg' : 'text-sm';
             return `<div class="flex items-center gap-2 ${alignClass}">${getTeamColorDiv(teamName)}<span class="font-bold ${fontSizeClass} text-white">${getTeamInitials(teamName)}</span></div>`;
         };
@@ -259,31 +202,27 @@
             container.innerHTML = buttonsHTML;
         };
 
-        const renderMatches = (matches) => {
+        const renderMatches = (matchesToRender) => {
             const body = document.getElementById('fixture-body'); body.innerHTML = '';
-            if (matches.length === 0) { body.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-slate-400">No hay partidos para mostrar.</td></tr>`; return; }
-            
-            const grouped = matches.reduce((acc, m) => { (acc[`Fecha ${m.jornada}`] = acc[`Fecha ${m.jornada}`] || []).push(m); return acc; }, {});
-            
+            document.getElementById('loader-fixture').style.display = 'none';
+            if (matchesToRender.length === 0) { body.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-slate-400">No hay partidos para mostrar.</td></tr>`; return; }
+            const grouped = matchesToRender.reduce((acc, m) => { (acc[`Fecha ${m.jornada}`] = acc[`Fecha ${m.jornada}`] || []).push(m); return acc; }, {});
             Object.keys(grouped).sort((a, b) => parseInt(a.split(' ')[1]) - parseInt(b.split(' ')[1])).forEach(jornada => {
                 const titleRow = body.insertRow(); titleRow.innerHTML = `<td colspan="6" class="px-2 py-2 font-bold text-white bg-slate-800">${jornada}</td>`;
-                
                 grouped[jornada].forEach(match => {
                     const isHeaderMatch = headerTeams.includes(match.home) && headerTeams.includes(match.away);
                     const row = body.insertRow();
                     row.className = 'hover:bg-slate-800/60 cursor-pointer' + (isHeaderMatch ? ' bg-blue-900/40' : '');
                     row.setAttribute('onclick', `event.target.tagName.toLowerCase() !== 'input' && toggleDetails('details-${match.id}')`);
-                    
                     const homeScore = match.result ? match.result.split('-')[0] : '';
                     const awayScore = match.result ? match.result.split('-')[1] : '';
-
                     row.innerHTML = `
                         <td class="py-3 text-left text-slate-300">${renderTeamDisplay(match.home, '', true)}</td>
                         <td class="py-3 text-center">
                            <div class="flex justify-center items-center gap-1">
-                                <input id="home-score-${match.id}" type="number" min="0" value="${homeScore}" onblur="updateResult(${match.id})"
+                                <input id="home-score-${match.id}" type="number" min="0" value="${homeScore}" onblur="updateResult('${match.id}')"
                                        class="w-10 h-10 p-2 text-center font-bold text-lg border-2 border-slate-600 rounded-md bg-slate-900 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <input id="away-score-${match.id}" type="number" min="0" value="${awayScore}" onblur="updateResult(${match.id})"
+                                <input id="away-score-${match.id}" type="number" min="0" value="${awayScore}" onblur="updateResult('${match.id}')"
                                        class="w-10 h-10 p-2 text-center font-bold text-lg border-2 border-slate-600 rounded-md bg-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                             </div>
                         </td>
@@ -292,7 +231,6 @@
                         <td class="py-3 text-center text-slate-400">${match.time}</td>
                         <td class="py-3 text-center text-slate-400 text-lg">&#9662;</td>
                     `;
-
                     const detailsRow = body.insertRow();
                     detailsRow.id = `details-${match.id}`;
                     detailsRow.className = 'hidden';
@@ -303,28 +241,17 @@
 
         const renderAnnualTable = () => {
             const body = document.getElementById('annual-table-body'); body.innerHTML = '';
-            
+            document.getElementById('loader-table').style.display = 'none';
             annualTableData.sort((a, b) => b.pts - a.pts || (b.dg - a.dg) || (b.gf - a.gf));
-            
             const descendingTeams = [...annualTableData].slice(-2).map(t => t.team);
-
             annualTableData.forEach((team, index) => {
                 const row = body.insertRow();
-                
                 let rowClass = '';
-                if (index <= 2) {
-                    rowClass = 'bg-yellow-500/10'; // Gold
-                } else if (index >= 3 && index <= 8) {
-                    rowClass = 'bg-gray-500/10'; // Silver
-                }
-
-                if (descendingTeams.includes(team.team)) {
-                    rowClass = 'bg-red-900/40 text-red-300';
-                }
+                if (index <= 2) { rowClass = 'bg-yellow-500/10'; } 
+                else if (index >= 3 && index <= 8) { rowClass = 'bg-gray-500/10'; }
+                if (descendingTeams.includes(team.team)) { rowClass = 'bg-red-900/40 text-red-300';}
                 row.className = rowClass;
-
                 const dgClass = team.dg > 0 ? 'text-green-400' : (team.dg < 0 ? 'text-red-400' : 'text-slate-400');
-                
                 row.innerHTML = `
                     <td class="px-2 py-3 font-semibold text-center text-slate-400">${index + 1}</td>
                     <td class="px-2 py-3 text-left text-slate-300">${renderTeamDisplay(team.team)}</td>
@@ -341,91 +268,120 @@
         };
 
         // --- LOGIC & EVENT HANDLERS ---
-        const updateResult = (matchId) => {
+        window.updateResult = async (matchId) => {
             const match = allMatches.find(m => m.id === matchId);
             if (!match) return;
-            const homeScoreEl = document.getElementById(`home-score-${match.id}`);
-            const awayScoreEl = document.getElementById(`away-score-${match.id}`);
-            const homeScore = homeScoreEl.value;
-            const awayScore = awayScoreEl.value;
-
+            const homeScore = document.getElementById(`home-score-${match.id}`).value;
+            const awayScore = document.getElementById(`away-score-${match.id}`).value;
+            let newResult = null;
             if (homeScore.trim() !== '' && awayScore.trim() !== '') {
-                match.result = `${homeScore}-${awayScore}`;
-            } else {
-                match.result = null;
+                newResult = `${homeScore}-${awayScore}`;
             }
-            recalculateTable();
+            const matchDocRef = doc(db, `artifacts/${appId}/public/data/matches`, String(match.id));
+            await updateDoc(matchDocRef, { result: newResult });
         };
         
         const recalculateTable = () => {
             let tempTable = JSON.parse(JSON.stringify(initialAnnualTableData));
-
             allMatches.forEach(match => {
-                if (match.result) {
+                if (match.result && !match.isHistorical) {
                     const [homeScore, awayScore] = match.result.split('-').map(Number);
                     const homeTeam = tempTable.find(t => t.team === match.home);
                     const awayTeam = tempTable.find(t => t.team === match.away);
-
                     if (homeTeam && awayTeam) {
-                        homeTeam.pj += 1;
-                        awayTeam.pj += 1;
-                        homeTeam.gf += homeScore;
-                        awayTeam.gf += awayScore;
-                        homeTeam.gc += awayScore;
-                        awayTeam.gc += homeScore;
-
-                        if (homeScore > awayScore) {
-                            homeTeam.pg += 1;
-                            homeTeam.pts += 3;
-                            awayTeam.pp += 1;
-                        } else if (awayScore > homeScore) {
-                            awayTeam.pg += 1;
-                            awayTeam.pts += 3;
-                            homeTeam.pp += 1;
-                        } else {
-                            homeTeam.pe += 1;
-                            awayTeam.pe += 1;
-                            homeTeam.pts += 1;
-                            awayTeam.pts += 1;
-                        }
+                        homeTeam.pj += 1; awayTeam.pj += 1;
+                        homeTeam.gf += homeScore; awayTeam.gf += awayScore;
+                        homeTeam.gc += awayScore; awayTeam.gc += homeScore;
+                        if (homeScore > awayScore) { homeTeam.pg += 1; homeTeam.pts += 3; awayTeam.pp += 1; } 
+                        else if (awayScore > homeScore) { awayTeam.pg += 1; awayTeam.pts += 3; homeTeam.pp += 1; } 
+                        else { homeTeam.pe += 1; awayTeam.pe += 1; homeTeam.pts += 1; awayTeam.pts += 1; }
                     }
                 }
             });
-
-            tempTable.forEach(team => {
-                team.dg = team.gf - team.gc;
-            });
-
+            tempTable.forEach(team => { team.dg = team.gf - team.gc; });
             annualTableData = tempTable;
             renderAnnualTable();
         };
         
-        const toggleDetails = (id) => document.getElementById(id)?.classList.toggle('hidden');
-        
-        const filterMatches = (team) => {
+        window.toggleDetails = (id) => document.getElementById(id)?.classList.toggle('hidden');
+        window.filterMatches = (team) => {
             document.querySelectorAll('.team-filter-btn').forEach(b => b.classList.remove('active'));
             const btn = document.querySelector(`.team-filter-btn[onclick="filterMatches('${team}')"]`);
             if(btn) btn.classList.add('active');
             const filtered = (team === 'All') ? allMatches : allMatches.filter(m => m.home === team || m.away === team);
             renderMatches(filtered);
         };
-        
-        const showTab = (tabId, btn) => {
+        window.showTab = (tabId, btn) => {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
             document.getElementById(tabId).classList.remove('hidden');
             document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('active'); });
             btn.classList.add('active');
         };
         
+        async function setupInitialData() {
+            const querySnapshot = await getDocs(teamsRef);
+            if (querySnapshot.empty) {
+                console.log("No data found. Seeding initial data...");
+                const batch = writeBatch(db);
+                initialTableData.forEach(team => {
+                    const teamDocRef = doc(db, `artifacts/${appId}/public/data/teams`, team.team);
+                    batch.set(teamDocRef, team);
+                });
+                initialMatchesData.forEach(match => {
+                    const matchDocRef = doc(db, `artifacts/${appId}/public/data/matches`, String(match.id));
+                    batch.set(matchDocRef, match);
+                });
+                await batch.commit();
+            } else {
+                console.log("Data already exists.");
+            }
+        }
+        
         // --- INITIALIZATION ---
-        document.addEventListener('DOMContentLoaded', () => {
+        async function main() {
+            if (typeof __initial_auth_token !== 'undefined') { await signInWithCustomToken(auth, __initial_auth_token); } 
+            else { await signInAnonymously(auth); }
+
+            await setupInitialData();
+
+            // Setup listeners
+            onSnapshot(teamsRef, (snapshot) => {
+                const teams = snapshot.docs.map(doc => doc.data());
+                const historicalMatch = allMatches.find(m => m.isHistorical);
+                if (historicalMatch) {
+                    const homeTeam = teams.find(t => t.team === historicalMatch.home);
+                    const awayTeam = teams.find(t => t.team === historicalMatch.away);
+                    if (homeTeam && awayTeam && !homeTeam.historicalApplied) { // Prevent double counting
+                        homeTeam.pj += 1; awayTeam.pj += 1;
+                        homeTeam.pe += 1; awayTeam.pe += 1;
+                        homeTeam.pts += 1; awayTeam.pts += 1;
+                        homeTeam.historicalApplied = true; 
+                        awayTeam.historicalApplied = true; 
+                    }
+                }
+                initialAnnualTableData = JSON.parse(JSON.stringify(teams));
+                recalculateTable();
+            });
+
+            onSnapshot(matchesRef, (snapshot) => {
+                allMatches = snapshot.docs.map(doc => ({ ...doc.data(), firebaseId: doc.id }));
+                renderMatches(allMatches);
+                recalculateTable();
+                // Re-apply filter if one was active
+                const activeFilter = document.querySelector('.team-filter-btn.active');
+                if (activeFilter) {
+                    const team = activeFilter.textContent.trim() === 'Todos' ? 'All' : headerTeams.find(t => getTeamInitials(t) === activeFilter.textContent.replace('Todos','').trim());
+                    filterMatches(team || 'All');
+                }
+            });
+
             renderFilterButtons();
-            renderMatches(allMatches);
-            renderAnnualTable();
             const fixtureTabBtn = document.querySelector('.tab-btn');
             showTab('fixture-container', fixtureTabBtn);
             filterMatches('All');
-        });
+        }
+
+        main();
     </script>
 </body>
 </html>
