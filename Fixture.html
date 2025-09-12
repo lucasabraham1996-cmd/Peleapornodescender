@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>La pelea por no descender - Liga Profesional</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            background-image: url('https://www.ligaprofesional.ar/wp-content/uploads/2025/03/Fondo-Home-grande-5.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+        .table-custom-header th {
+            @apply px-4 py-2 font-bold text-gray-700 uppercase tracking-wider;
+        }
+        .team-filter-btn, .tab-btn {
+            @apply flex-1 p-2 text-center font-semibold rounded-lg shadow-sm transition-transform duration-200 transform hover:scale-105 cursor-pointer;
+        }
+        .tab-btn.active {
+            @apply bg-blue-500 text-white scale-105;
+        }
+        .color-stripes {
+            width: 1rem;
+            height: 1rem;
+            border-radius: 9999px;
+            margin-right: 0.5rem;
+            background-image: linear-gradient(to right, var(--color1) 50%, var(--color2) 50%);
+            border: 1px solid #e5e7eb;
+            flex-shrink: 0;
+        }
+        .team-color-single {
+            width: 1rem;
+            height: 1rem;
+            border-radius: 9999px;
+            margin-right: 0.5rem;
+            background-color: var(--color1);
+            border: 1px solid #e5e7eb;
+            flex-shrink: 0;
+        }
+        .color-triple-stripes {
+            width: 1rem;
+            height: 1rem;
+            border-radius: 9999px;
+            margin-right: 0.5rem;
+            background-image: linear-gradient(to right, var(--color1) 33.3%, var(--color2) 33.3%, var(--color2) 66.6%, var(--color3) 66.6%);
+            border: 1px solid #e5e7eb;
+            flex-shrink: 0;
+        }
+        .color-diagonal-stripe {
+            width: 1rem;
+            height: 1rem;
+            border-radius: 9999px;
+            margin-right: 0.5rem;
+            background: linear-gradient(135deg, var(--color1) 0%, var(--color1) 40%, var(--color2) 40%, var(--color2) 60%, var(--color1) 60%, var(--color1) 100%);
+            border: 1px solid #e5e7eb;
+            flex-shrink: 0;
+        }
+        .color-vertical-stripes {
+            width: 1rem;
+            height: 1rem;
+            border-radius: 9999px;
+            margin-right: 0.5rem;
+            background-image: repeating-linear-gradient(to right, var(--color1) 0, var(--color1) 2px, var(--color2) 2px, var(--color2) 4px);
+            border: 1px solid #e5e7eb;
+            flex-shrink: 0;
+        }
+        .color-horizontal-stripe {
+            width: 1rem;
+            height: 1rem;
+            border-radius: 9999px;
+            margin-right: 0.5rem;
+            background-image: linear-gradient(to bottom, var(--color1) 0%, var(--color1) 33%, var(--color2) 33%, var(--color2) 67%, var(--color1) 67%, var(--color1) 100%);
+            border: 1px solid #e5e7eb;
+            flex-shrink: 0;
+        }
+        .color-chevron {
+            width: 1rem;
+            height: 1rem;
+            border-radius: 9999px;
+            margin-right: 0.5rem;
+            background-color: var(--color1);
+            position: relative;
+            overflow: hidden;
+            border: 1px solid #e5e7eb;
+            flex-shrink: 0;
+        }
+        .color-chevron::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            background-color: var(--color2);
+            clip-path: polygon(0 0, 20% 0, 50% 60%, 80% 0, 100% 0, 50% 100%);
+        }
+        .color-five-stripes {
+            width: 1rem;
+            height: 1rem;
+            border-radius: 9999px;
+            margin-right: 0.5rem;
+            background-image: linear-gradient(to right, 
+                var(--color1) 0%, var(--color1) 20%, 
+                var(--color2) 20%, var(--color2) 40%, 
+                var(--color1) 40%, var(--color1) 60%, 
+                var(--color2) 60%, var(--color2) 80%, 
+                var(--color1) 80%, var(--color1) 100%
+            );
+            border: 1px solid #e5e7eb;
+            flex-shrink: 0;
+        }
+        .details-panel {
+            @apply bg-gray-800 text-white;
+        }
+        @media (max-width: 640px) {
+            .table-custom-header, .table-custom-row { font-size: 0.75rem; }
+            .px-4 { padding-left: 0.5rem; padding-right: 0.5rem; }
+            .team-filter-btn, .tab-btn { padding: 0.5rem; font-size: 0.75rem; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <!-- Main Container -->
+    <div class="w-full max-w-4xl bg-white shadow-xl rounded-xl overflow-hidden p-6 bg-opacity-90">
+        <h1 class="text-3xl font-bold text-center text-gray-800 my-4">La pelea por no descender - Liga Profesional</h1>
+        <p class="text-center text-gray-600 mb-6">Explora el fixture, anota resultados y ve cómo cambia la tabla anual.</p>
+
+        <!-- Tab Buttons -->
+        <div class="flex gap-4 justify-center mb-6 border-b border-gray-200">
+            <button class="tab-btn pb-3 border-b-2 border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-300" onclick="showTab('fixture-container', this)">Fixture</button>
+            <button class="tab-btn pb-3 border-b-2 border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-300" onclick="showTab('annual-table-container', this)">Tabla Anual</button>
+        </div>
+
+        <!-- Fixture Container -->
+        <div id="fixture-container" class="tab-content">
+            <div id="filter-buttons-container" class="flex flex-wrap gap-2 justify-center mb-6"></div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full table-auto border-collapse">
+                    <thead class="bg-gray-200"><tr class="table-custom-header">
+                        <th class="rounded-tl-lg text-left">Local</th>
+                        <th class="text-center w-24">Resultado</th>
+                        <th class="text-right">Visitante</th>
+                        <th class="text-center w-28">Fecha</th>
+                        <th class="text-center w-24">Hora</th>
+                        <th class="rounded-tr-lg text-center w-20">Detalles</th>
+                    </tr></thead>
+                    <tbody class="divide-y divide-gray-200" id="fixture-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Annual Table Container -->
+        <div id="annual-table-container" class="tab-content hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full table-auto border-collapse">
+                    <thead class="bg-gray-200"><tr class="table-custom-header text-sm">
+                        <th class="rounded-tl-lg text-left">Pos</th>
+                        <th class="text-left">Equipo</th>
+                        <th class="text-center">Pts</th><th class="text-center">PJ</th>
+                        <th class="text-center">PG</th><th class="text-center">PE</th>
+                        <th class="text-center">PP</th><th class="text-center">GF</th>
+                        <th class="text-center">GC</th><th class="rounded-tr-lg text-center">DG</th>
+                    </tr></thead>
+                    <tbody class="divide-y divide-gray-200 text-sm" id="annual-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA ---
+        const teamColors = {
+            'Talleres': { primary: '#001F5B', secondary: '#FFFFFF', type: 'five-stripes' }, 'Sarmiento': { primary: '#007F3F', secondary: '#FFFFFF', type: 'single' }, 'San Martín SJ': { primary: '#2D8C3F', secondary: '#000000', type: 'stripes' }, 'Aldosivi': { primary: '#008060', secondary: '#FCD116', type: 'stripes' }, 'Godoy Cruz': { primary: '#01376A', secondary: '#FFFFFF', type: 'vertical-stripes' }, 'Barracas Central': { primary: '#E31C25', secondary: '#FFFFFF', tertiary: '#E31C25', type: 'triple-stripes' }, 'Instituto': { primary: '#E31C25', secondary: '#FFFFFF', type: 'stripes' }, 'San Lorenzo': { primary: '#181C5C', secondary: '#E31C25', type: 'stripes' }, 'Independiente': { primary: '#E31C25', secondary: '#FFFFFF', type: 'single' }, 'Independiente Rivadavia': { primary: '#003E99', secondary: '#FFFFFF', type: 'single' }, 'Lanús': { primary: '#7B1327', secondary: '#FFFFFF', type: 'single' }, 'Atlético Tucumán': { primary: '#0060A0', secondary: '#FFFFFF', type: 'stripes' }, 'Deportivo Riestra': { primary: '#000000', secondary: '#FFFFFF', type: 'stripes' }, 'Tigre': { primary: '#002255', secondary: '#E31C25', type: 'stripes' }, 'Rosario Central': { primary: '#002D72', secondary: '#FCD116', type: 'stripes' }, 'Belgrano': { primary: '#7AC0D8', secondary: '#000000', type: 'single' }, 'River Plate': { primary: '#FFFFFF', secondary: '#E81A24', type: 'diagonal-stripe' }, 'Vélez Sarsfield': { primary: '#FFFFFF', secondary: '#00366D', type: 'chevron' }, 'Platense': { primary: '#5C4A42', secondary: '#FFFFFF', type: 'stripes' }, 'Argentinos Jrs': { primary: '#E31C25', secondary: '#FFFFFF', type: 'single' }, 'Unión': { primary: '#E81C28', secondary: '#FFFFFF', type: 'stripes' }, 'Huracán': { primary: '#E31C25', secondary: '#FFFFFF', type: 'single' }, 'Estudiantes': { primary: '#E31C25', secondary: '#FFFFFF', type: 'stripes' }, 'Defensa y Justicia': { primary: '#009943', secondary: '#FCD116', type: 'stripes' }, 'Gimnasia': { primary: '#FFFFFF', secondary: '#0033A0', type: 'horizontal-stripe' }, 'Central Córdoba': { primary: '#000000', secondary: '#FFFFFF', type: 'stripes'}, 'Newell\'s': { primary: '#E31C25', secondary: '#000000', type: 'stripes' }, 'Banfield': { primary: '#008037', secondary: '#FFFFFF', type: 'stripes' }
+        };
+
+        const allMatches = [
+            { id: 1, home: 'Godoy Cruz', away: 'Barracas Central', date: '13/09', time: '12:30', tournament: 'Liga Profesional', jornada: 8, result: null }, { id: 2, home: 'Sarmiento', away: 'Aldosivi', date: '13/09', time: '19:15', tournament: 'Liga Profesional', jornada: 8, result: null }, { id: 3, home: 'Tigre', away: 'Talleres', date: '14/09', time: '18:00', tournament: 'Liga Profesional', jornada: 8, result: null }, { id: 4, home: 'San Martín SJ', away: 'Vélez Sarsfield', date: '19/09', time: '17:15', tournament: 'Primera Nacional', jornada: 9, result: null }, { id: 5, home: 'Barracas Central', away: 'Sarmiento', date: '20/09', time: '12:30', tournament: 'Liga Profesional', jornada: 9, result: null }, { id: 6, home: 'Tigre', away: 'Aldosivi', date: '20/09', time: '17:00', tournament: 'Primera Nacional', jornada: 9, result: null }, { id: 7, home: 'Godoy Cruz', away: 'Instituto', date: '21/09', time: '14:45', tournament: 'Liga Profesional', jornada: 9, result: null }, { id: 8, home: 'Rosario Central', away: 'Talleres', date: '21/09', time: '17:00', tournament: 'Liga Profesional', jornada: 9, result: null }, { id: 9, home: 'Platense', away: 'San Martín SJ', date: '26/09', time: '20:00', tournament: 'Primera Nacional', jornada: 10, result: null }, { id: 10, home: 'Aldosivi', away: 'Argentinos Jrs', date: '27/09', time: '12:30', tournament: 'Primera Nacional', jornada: 10, result: null }, { id: 11, home: 'San Lorenzo', away: 'Godoy Cruz', date: '27/09', time: '14:45', tournament: 'Liga Profesional', jornada: 10, result: null }, { id: 12, home: 'Talleres', away: 'Sarmiento', date: '27/09', time: '19:15', tournament: 'Liga Profesional', jornada: 10, result: null },
+            { id: 13, home: 'Godoy Cruz', away: 'Independiente', date: '05/10', time: '12:00', tournament: 'Liga Profesional', jornada: 11, result: null }, { id: 14, home: 'Talleres', away: 'Belgrano', date: '05/10', time: '17:00', tournament: 'Liga Profesional', jornada: 11, result: null }, { id: 15, home: 'Sarmiento', away: 'Gimnasia', date: '05/10', time: '17:00', tournament: 'Liga Profesional', jornada: 11, result: null }, { id: 16, home: 'Independiente Rivadavia', away: 'Godoy Cruz', date: '12/10', time: '12:00', tournament: 'Liga Profesional', jornada: 12, result: null }, { id: 17, home: 'Aldosivi', away: 'Huracán', date: '12/10', time: '17:00', tournament: 'Primera Nacional', jornada: 12, result: null }, { id: 18, home: 'Gimnasia', away: 'Talleres', date: '12/10', time: '20:00', tournament: 'Liga Profesional', jornada: 12, result: null }, { id: 19, home: 'Lanús', away: 'Godoy Cruz', date: '19/10', time: '17:00', tournament: 'Liga Profesional', jornada: 13, result: null }, { id: 20, home: 'Sarmiento', away: 'Vélez Sarsfield', date: '19/10', time: '17:00', tournament: 'Liga Profesional', jornada: 13, result: null }, { id: 21, home: 'Talleres', away: 'River Plate', date: '19/10', time: '21:00', tournament: 'Liga Profesional', jornada: 13, result: null },
+            { id: 22, home: 'Godoy Cruz', away: 'San Martín SJ', date: '26/10', time: '19:00', tournament: 'Liga Profesional', jornada: 14, result: null }, { id: 23, home: 'Vélez Sarsfield', away: 'Talleres', date: '26/10', time: '19:00', tournament: 'Liga Profesional', jornada: 14, result: null }, { id: 24, home: 'Platense', away: 'Sarmiento', date: '26/10', time: '19:00', tournament: 'Liga Profesional', jornada: 14, result: null }, { id: 25, home: 'Godoy Cruz', away: 'Atlético Tucumán', date: '02/11', time: '20:00', tournament: 'Liga Profesional', jornada: 15, result: null }, { id: 26, home: 'Talleres', away: 'Platense', date: '02/11', time: '17:00', tournament: 'Liga Profesional', jornada: 15, result: null }, { id: 27, home: 'Sarmiento', away: 'Instituto', date: '02/11', time: '17:00', tournament: 'Liga Profesional', jornada: 15, result: null },
+            { id: 28, home: 'Deportivo Riestra', away: 'Godoy Cruz', date: '09/11', time: '17:00', tournament: 'Liga Profesional', jornada: 16, result: null }, { id: 29, home: 'Instituto', away: 'Talleres', date: '09/11', time: '17:00', tournament: 'Liga Profesional', jornada: 16, result: null }, { id: 30, home: 'Aldosivi', away: 'San Martín SJ', date: '09/11', time: '20:00', tournament: 'Primera Nacional', jornada: 16, result: null }
+        ];
+
+        const initialAnnualTableData = [
+            { pos: 20, team: 'Gimnasia', pts: 26, pj: 23, pg: 7, pe: 5, pp: 11, gf: 14, gc: 23, dg: -9 }, { pos: 21, team: 'Belgrano', pts: 26, pj: 24, pg: 5, pe: 11, pp: 8, gf: 19, gc: 30, dg: -11 }, { pos: 22, team: 'Atlético Tucumán', pts: 25, pj: 23, pg: 7, pe: 4, pp: 12, gf: 25, gc: 27, dg: -2 }, { pos: 23, team: 'Newell\'s', pts: 25, pj: 23, pg: 6, pe: 7, pp: 10, gf: 18, gc: 23, dg: -5 }, { pos: 24, team: 'Banfield', pts: 24, pj: 23, pg: 6, pe: 6, pp: 11, gf: 22, gc: 29, dg: -7 }, { pos: 25, team: 'Instituto', pts: 24, pj: 23, pg: 6, pe: 6, pp: 11, gf: 18, gc: 30, dg: -12 }, { pos: 26, team: 'Godoy Cruz', pts: 23, pj: 23, pg: 4, pe: 11, pp: 8, gf: 15, gc: 28, dg: -13 }, { pos: 27, team: 'Sarmiento', pts: 21, pj: 22, pg: 3, pe: 12, pp: 7, gf: 16, gc: 28, dg: -12 }, { pos: 28, team: 'Talleres', pts: 18, pj: 23, pg: 3, pe: 9, pp: 11, gf: 14, gc: 23, dg: -9 }, { pos: 29, team: 'San Martín SJ', pts: 18, pj: 24, pg: 4, pe: 6, pp: 14, gf: 10, gc: 25, dg: -15 }, { pos: 30, team: 'Aldosivi', pts: 18, pj: 23, pg: 4, pe: 6, pp: 13, gf: 19, gc: 36, dg: -17 },
+        ];
+        let annualTableData = JSON.parse(JSON.stringify(initialAnnualTableData));
+        const headerTeams = ['Talleres', 'Sarmiento', 'San Martín SJ', 'Aldosivi', 'Godoy Cruz'];
+
+        // --- UTILS ---
+        const getDayOfWeek = (dateString) => { const [d, m] = dateString.split('/'); const date = new Date(new Date().getFullYear(), m - 1, d); return isNaN(date.getTime()) ? '' : ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'][date.getDay()]; };
+        const getTeamColorDiv = (teamName) => {
+            const c = teamColors[teamName]; if (!c) return `<div class="team-color-single" style="background-color: transparent; border: 1px solid #ccc;"></div>`;
+            const style = `--color1: ${c.primary}; --color2: ${c.secondary};` + (c.tertiary ? ` --color3: ${c.tertiary};` : '');
+            return `<div class="${c.type === 'single' ? 'team-color-single' : `color-${c.type}`}" style="${style}"></div>`;
+        };
+        const renderTeamDisplay = (teamName, alignClass = '') => `<div class="flex items-center ${alignClass}">${getTeamColorDiv(teamName)}<span>${teamName}</span></div>`;
+        
+        // --- RENDER FUNCTIONS ---
+        const renderFilterButtons = () => {
+            const container = document.getElementById('filter-buttons-container');
+            let buttonsHTML = `<button class="team-filter-btn" onclick="filterMatches('All')">Todos</button>`;
+            headerTeams.forEach(team => {
+                buttonsHTML += `<button class="team-filter-btn flex items-center justify-center" onclick="filterMatches('${team}')">${getTeamColorDiv(team)}${team}</button>`;
+            });
+            container.innerHTML = buttonsHTML;
+        };
+
+        const renderMatches = (matches) => {
+            const body = document.getElementById('fixture-body'); body.innerHTML = '';
+            if (matches.length === 0) { body.innerHTML = `<tr><td colspan="6" class="text-center py-4">No hay partidos para mostrar.</td></tr>`; return; }
+            
+            const grouped = matches.reduce((acc, m) => { (acc[`Fecha ${m.jornada}`] = acc[`Fecha ${m.jornada}`] || []).push(m); return acc; }, {});
+            
+            Object.keys(grouped).sort((a, b) => parseInt(a.split(' ')[1]) - parseInt(b.split(' ')[1])).forEach(jornada => {
+                const titleRow = body.insertRow(); titleRow.innerHTML = `<td colspan="6" class="px-4 py-2 font-bold text-gray-900 bg-gray-200">${jornada}</td>`;
+                
+                grouped[jornada].forEach(match => {
+                    const isHeaderMatch = headerTeams.includes(match.home) && headerTeams.includes(match.away);
+                    const row = body.insertRow();
+                    row.className = 'hover:bg-gray-100 cursor-pointer' + (isHeaderMatch ? ' bg-blue-100' : '');
+                    row.setAttribute('onclick', `event.target.tagName.toLowerCase() !== 'input' && toggleDetails('details-${match.id}')`);
+                    
+                    row.innerHTML = `
+                        <td class="px-4 py-3 text-left">${renderTeamDisplay(match.home)}</td>
+                        <td class="px-4 py-3 text-center">
+                            <input type="text" value="${match.result || '-'}" onblur="updateResult(${match.id}, this.value)" 
+                                   class="w-16 p-1 text-center border rounded bg-gray-100 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </td>
+                        <td class="px-4 py-3 text-right">${renderTeamDisplay(match.away, 'justify-end')}</td>
+                        <td class="px-4 py-3 text-center">${getDayOfWeek(match.date)} ${match.date}</td>
+                        <td class="px-4 py-3 text-center">${match.time} hs</td>
+                        <td class="px-4 py-3 text-center text-lg">&#9662;</td>
+                    `;
+
+                    const detailsRow = body.insertRow();
+                    detailsRow.id = `details-${match.id}`;
+                    detailsRow.className = 'hidden';
+                    detailsRow.innerHTML = `<td colspan="6" class="px-6 py-4 details-panel"><h4 class="font-bold mb-2">Detalles del Partido</h4><p><strong>Partido:</strong> ${match.home} vs ${match.away}</p><p><strong>Torneo:</strong> ${match.tournament}</p></td>`;
+                });
+            });
+        };
+
+        const renderAnnualTable = () => {
+            const body = document.getElementById('annual-table-body'); body.innerHTML = '';
+            let currentTable = JSON.parse(JSON.stringify(annualTableData));
+            currentTable.sort((a, b) => b.pts - a.pts || (b.dg - a.dg) || (b.gf - a.gf));
+            
+            currentTable.forEach((team, index) => {
+                const originalPos = initialAnnualTableData.find(t => t.team === team.team)?.pos || 0;
+                if (originalPos < 20) return;
+                
+                const currentPos = index + 1; // This is a bit flawed if higher teams are not in the list, but it's for display sorting
+                const displayPos = originalPos; // We will display the original position
+                
+                const row = body.insertRow();
+                // Relegation logic should be based on sorted position of ALL teams, but for this view we highlight the bottom 2 of this list
+                 if (currentTable.length - index <= 2) {
+                     row.className = 'bg-red-200 text-red-900';
+                 }
+
+                const dgClass = team.dg > 0 ? 'text-green-600' : (team.dg < 0 ? 'text-red-900' : '');
+                row.innerHTML = `
+                    <td class="px-4 py-3 font-semibold text-left">${displayPos}</td>
+                    <td class="px-4 py-3 text-left">${renderTeamDisplay(team.team)}</td>
+                    <td class="px-4 py-3 font-bold text-center">${team.pts}</td>
+                    <td class="px-4 py-3 text-center">${team.pj}</td><td class="px-4 py-3 text-center">${team.pg}</td>
+                    <td class="px-4 py-3 text-center">${team.pe}</td><td class="px-4 py-3 text-center">${team.pp}</td>
+                    <td class="px-4 py-3 text-center">${team.gf}</td><td class="px-4 py-3 text-center">${team.gc}</td>
+                    <td class="px-4 py-3 font-semibold text-center ${dgClass}">${team.dg}</td>
+                `;
+            });
+        };
+
+        // --- LOGIC & EVENT HANDLERS ---
+        const updateResult = (matchId, value) => {
+            const match = allMatches.find(m => m.id === matchId);
+            if (!match) return;
+            const cleanValue = value.trim();
+            if (/^\d+\s*-\s*\d+$/.test(cleanValue) || cleanValue === '' || cleanValue === '-') {
+                 match.result = cleanValue === '-' || cleanValue === '' ? null : cleanValue.replace(/\s/g, '');
+                 recalculateTable();
+            } else {
+                alert("Formato de resultado inválido. Use 'X-Y', '-' o déjelo vacío.");
+            }
+        };
+        
+        const recalculateTable = () => {
+            let tempTable = JSON.parse(JSON.stringify(initialAnnualTableData));
+            allMatches.forEach(match => {
+                if (!match.result) return;
+                const [homeScore, awayScore] = match.result.split('-').map(Number);
+                const homeTeam = tempTable.find(t => t.team === match.home);
+                const awayTeam = tempTable.find(t => t.team === match.away);
+                if (!homeTeam || !awayTeam) return;
+
+                homeTeam.pj++; awayTeam.pj++;
+                homeTeam.gf += homeScore; awayTeam.gf += awayScore;
+                homeTeam.gc += awayScore; awayTeam.gc += homeScore;
+
+                if (homeScore > awayScore) { homeTeam.pts += 3; homeTeam.pg++; awayTeam.pp++; } 
+                else if (awayScore > homeScore) { awayTeam.pts += 3; awayTeam.pg++; homeTeam.pp++; } 
+                else { homeTeam.pts += 1; awayTeam.pts += 1; homeTeam.pe++; awayTeam.pe++; }
+                homeTeam.dg = homeTeam.gf - homeTeam.gc;
+                awayTeam.dg = awayTeam.gf - awayTeam.gc;
+            });
+            annualTableData = tempTable;
+            renderAnnualTable();
+        };
+        
+        const toggleDetails = (id) => document.getElementById(id)?.classList.toggle('hidden');
+        const filterMatches = (team) => {
+            document.querySelectorAll('.team-filter-btn').forEach(b => b.classList.remove('bg-blue-500', 'text-white'));
+            const btn = Array.from(document.querySelectorAll('.team-filter-btn')).find(b => b.textContent.trim().includes(team));
+            if(btn) btn.classList.add('bg-blue-500', 'text-white');
+            const filtered = (team === 'All') ? allMatches : allMatches.filter(m => m.home === team || m.away === team);
+            renderMatches(filtered);
+        };
+        const showTab = (tabId, btn) => {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+            document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('active', 'bg-blue-500', 'text-white'); });
+            btn.classList.add('active', 'bg-blue-500', 'text-white');
+        };
+        
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            renderFilterButtons();
+            renderMatches(allMatches);
+            renderAnnualTable();
+            const fixtureTabBtn = document.querySelector('.tab-btn');
+            showTab('fixture-container', fixtureTabBtn);
+            filterMatches('All');
+        });
+    </script>
+</body>
+</html>
+
