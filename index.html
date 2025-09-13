@@ -22,7 +22,7 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
         /* Definitive Button Styles */
-        .tab-btn, .team-filter-btn {
+        .tab-btn, .team-filter-btn, .sub-tab-btn, .restore-btn {
             background-color: rgba(30, 41, 59, 0.7); /* bg-slate-800/70 */
             border: 1px solid #475569; /* border-slate-600 */
             color: #FFFFFF; /* White text */
@@ -33,16 +33,20 @@
             transition: all 0.2s ease-in-out;
             cursor: pointer;
         }
-        .tab-btn:hover, .team-filter-btn:hover {
+        .tab-btn:hover, .team-filter-btn:hover, .sub-tab-btn:hover, .restore-btn:hover {
             background-color: #475569; /* bg-slate-600 */
             border-color: #64748b; /* border-slate-500 */
         }
-        .tab-btn.active, .team-filter-btn.active {
+        .tab-btn.active, .team-filter-btn.active, .sub-tab-btn.active {
             background-color: #FFFFFF;
             color: #1e3a8a; /* text-blue-800 */
             font-weight: 700;
             transform: scale(1.05);
             border-color: #FFFFFF;
+        }
+        .restore-btn {
+            background-color: #991b1b; /* bg-red-800 */
+            border-color: #f87171; /* border-red-400 */
         }
 
         .color-indicator {
@@ -65,14 +69,13 @@
         
         .details-panel { @apply bg-slate-900 text-white; }
         
-        /* Hide number input arrows */
         input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         input[type=number] { -moz-appearance: textfield; }
 
         @media (max-width: 640px) {
-            .table-custom-header, #fixture-body tr, #annual-table-body tr { font-size: 0.7rem; }
+            .table-custom-header, #fixture-body tr, #annual-table-body tr, #promedios-table-body tr, #talleres-table-body tr { font-size: 0.7rem; }
             th, td { padding-left: 0.25rem; padding-right: 0.25rem; }
-            .team-filter-btn, .tab-btn { padding: 0.5rem; font-size: 0.75rem; }
+            .team-filter-btn, .tab-btn, .sub-tab-btn, .restore-btn { padding: 0.5rem; font-size: 0.75rem; }
             h1 { font-size: 1.25rem; }
             p { font-size: 0.875rem; }
         }
@@ -83,17 +86,23 @@
     <!-- Main Container -->
     <div class="w-full max-w-4xl main-container shadow-2xl rounded-xl overflow-hidden p-4 sm:p-6">
         <h1 class="text-2xl sm:text-3xl font-bold text-center text-white my-4">La pelea por no descender - Liga Profesional</h1>
-        <p class="text-sm sm:text-base text-center text-slate-400 mb-6">Explora el fixture, anota resultados y ve cómo cambia la tabla anual.</p>
+        <p class="text-sm sm:text-base text-center text-slate-400 mb-6">Explora el fixture, anota resultados y ve cómo cambian las tablas.</p>
 
         <!-- Tab Buttons -->
-        <div class="flex flex-col sm:flex-row gap-2 justify-center mb-6">
+        <div class="flex flex-wrap gap-2 justify-center mb-6">
             <button class="tab-btn" onclick="showTab('fixture-container', this)">Fixture</button>
             <button class="tab-btn" onclick="showTab('annual-table-container', this)">Tabla Anual</button>
+            <button class="tab-btn" onclick="showTab('promedios-container', this)">Promedios</button>
+            <button class="tab-btn" onclick="showTab('talleres-table-container', this)">Tabla de Talleres</button>
         </div>
 
         <!-- Fixture Container -->
         <div id="fixture-container" class="tab-content">
-            <div id="filter-buttons-container" class="flex flex-wrap gap-2 justify-center mb-6"></div>
+            <div class="flex justify-between items-center mb-4">
+                <div id="filter-buttons-container" class="flex flex-wrap gap-2 justify-start"></div>
+                <button class="restore-btn" onclick="restoreResults()">Restaurar</button>
+            </div>
+             <div id="fixture-sub-tabs-container" class="flex flex-wrap gap-1 justify-center mb-4"></div>
             <div class="overflow-x-auto">
                 <table class="min-w-full table-auto border-collapse">
                     <thead class="bg-slate-800/50"><tr class="table-custom-header">
@@ -129,6 +138,47 @@
                 </table>
             </div>
         </div>
+
+        <!-- Averages Table Container -->
+        <div id="promedios-container" class="tab-content hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full table-auto border-collapse">
+                    <thead class="bg-slate-800/50"><tr class="table-custom-header text-sm">
+                        <th class="rounded-tl-lg text-center text-slate-300">Pos</th>
+                        <th class="text-left text-slate-300">Equipo</th>
+                        <th class="text-center text-slate-300">Prom</th>
+                        <th class="text-center text-slate-300">Pts</th>
+                        <th class="text-center text-slate-300">PJ</th>
+                        <th class="hidden sm:table-cell text-center text-slate-300">2023</th>
+                        <th class="hidden sm:table-cell text-center text-slate-300">2024</th>
+                        <th class="rounded-tr-lg text-center text-slate-300">2025</th>
+                    </tr></thead>
+                    <tbody class="divide-y divide-slate-700 text-sm" id="promedios-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Talleres Table Container -->
+        <div id="talleres-table-container" class="tab-content hidden">
+             <h2 class="text-xl font-bold text-center text-white mb-4">Últimos 10 Equipos - Tabla Anual</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full table-auto border-collapse">
+                    <thead class="bg-slate-800/50"><tr class="table-custom-header text-sm">
+                        <th class="rounded-tl-lg text-center text-slate-300">Pos</th>
+                        <th class="text-left text-slate-300">Equipo</th>
+                        <th class="text-center text-slate-300">Pts</th>
+                        <th class="text-center text-slate-300">PJ</th>
+                        <th class="hidden sm:table-cell text-center text-slate-300">PG</th>
+                        <th class="hidden sm:table-cell text-center text-slate-300">PE</th>
+                        <th class="hidden sm:table-cell text-center text-slate-300">PP</th>
+                        <th class="hidden sm:table-cell text-center text-slate-300">GF</th>
+                        <th class="hidden sm:table-cell text-center text-slate-300">GC</th>
+                        <th class="rounded-tr-lg text-center text-slate-300">DG</th>
+                    </tr></thead>
+                    <tbody class="divide-y divide-slate-700 text-sm" id="talleres-table-body"></tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -157,7 +207,7 @@
             'Unión': { initials: 'UNI', primary: '#E81C28', secondary: '#FFFFFF', type: 'stripes' },
             'Huracán': { initials: 'HUR', primary: '#FFFFFF', secondary: '#FFFFFF', type: 'single' },
             'Estudiantes': { initials: 'EST', primary: '#E31C25', secondary: '#FFFFFF', type: 'stripes' },
-            'Defensa y Justicia': { initials: 'DYJ', primary: '#009943', secondary: '#FCD116', type: 'stripes' },
+            'Defensa y Justicia': { initials: 'DEF', primary: '#009943', secondary: '#FCD116', type: 'stripes' },
             'Gimnasia': { initials: 'GIM', primary: '#FFFFFF', secondary: '#0033A0', type: 'horizontal-stripe' },
             'Central Córdoba': { initials: 'CEN', primary: '#000000', secondary: '#FFFFFF', type: 'stripes'},
             'Newell\'s': { initials: 'NOB', primary: '#E31C25', secondary: '#000000', type: 'stripes' },
@@ -167,20 +217,65 @@
         };
         
         const allMatches = [
-            { id: 1, home: 'Godoy Cruz', away: 'Barracas Central', date: '13/09', time: '12:30', jornada: 8, result: null }, { id: 2, home: 'Sarmiento', away: 'Aldosivi', date: '13/09', time: '19:15', jornada: 8, result: null }, { id: 3, home: 'Tigre', away: 'Talleres', date: '14/09', time: '18:00', jornada: 8, result: null }, { id: 31, home: 'Belgrano', away: 'San Martín SJ', date: '14/09', time: '15:00', jornada: 8, result: '0-0', isHistorical: true }, { id: 4, home: 'San Martín SJ', away: 'Vélez Sarsfield', date: '19/09', time: '17:15', jornada: 9, result: null }, { id: 5, home: 'Barracas Central', away: 'Sarmiento', date: '20/09', time: '12:30', jornada: 9, result: null }, { id: 6, home: 'Tigre', away: 'Aldosivi', date: '20/09', time: '17:00', jornada: 9, result: null }, { id: 7, home: 'Godoy Cruz', away: 'Instituto', date: '21/09', time: '14:45', jornada: 9, result: null }, { id: 8, home: 'Rosario Central', away: 'Talleres', date: '21/09', time: '17:00', jornada: 9, result: null }, { id: 9, home: 'Platense', away: 'San Martín SJ', date: '26/09', time: '20:00', jornada: 10, result: null }, { id: 10, home: 'Aldosivi', away: 'Argentinos Jrs', date: '27/09', time: '12:30', jornada: 10, result: null }, { id: 11, home: 'San Lorenzo', away: 'Godoy Cruz', date: '27/09', time: '14:45', jornada: 10, result: null }, { id: 12, home: 'Talleres', away: 'Sarmiento', date: '27/09', time: '19:15', jornada: 10, result: null }, { id: 13, home: 'Godoy Cruz', away: 'Independiente', date: '05/10', time: '12:00', jornada: 11, result: null }, { id: 14, home: 'Talleres', away: 'Belgrano', date: '05/10', time: '17:00', jornada: 11, result: null }, { id: 15, home: 'Sarmiento', away: 'Gimnasia', date: '05/10', time: '17:00', jornada: 11, result: null }, { id: 32, home: 'San Martín SJ', away: 'Instituto', date: '06/10', time: '19:00', jornada: 11, result: null }, { id: 33, home: 'Unión', away: 'Aldosivi', date: '07/10', time: '21:00', jornada: 11, result: null }, { id: 16, home: 'Independiente Rivadavia', away: 'Godoy Cruz', date: '12/10', time: '12:00', jornada: 12, result: null }, { id: 17, home: 'Aldosivi', away: 'Huracán', date: '12/10', time: '17:00', jornada: 12, result: null }, { id: 18, home: 'Gimnasia', away: 'Talleres', date: '12/10', time: '20:00', jornada: 12, result: null }, { id: 34, home: 'River Plate', away: 'Sarmiento', date: '13/10', time: '21:00', jornada: 12, result: null }, { id: 35, home: 'San Lorenzo', away: 'San Martín SJ', date: '14/10', time: '17:00', jornada: 12, result: null }, { id: 19, home: 'Lanús', away: 'Godoy Cruz', date: '19/10', time: '17:00', jornada: 13, result: null }, { id: 20, home: 'Sarmiento', away: 'Vélez Sarsfield', date: '19/10', time: '17:00', jornada: 13, result: null }, { id: 21, home: 'Talleres', away: 'River Plate', date: '19/10', time: '21:00', jornada: 13, result: null }, { id: 36, home: 'Independiente', away: 'San Martín SJ', date: '20/10', time: '19:00', jornada: 13, result: null }, { id: 37, home: 'Defensa y Justicia', away: 'Aldosivi', date: '21/10', time: '17:00', jornada: 13, result: null }, { id: 22, home: 'Godoy Cruz', away: 'San Martín SJ', date: '26/10', time: '19:00', jornada: 14, result: null }, { id: 23, home: 'Vélez Sarsfield', away: 'Talleres', date: '26/10', time: '19:00', jornada: 14, result: null }, { id: 24, home: 'Platense', away: 'Sarmiento', date: '26/10', time: '19:00', jornada: 14, result: null }, { id: 38, home: 'Aldosivi', away: 'Estudiantes', date: '27/10', time: '17:00', jornada: 14, result: null }, { id: 25, home: 'Atlético Tucumán', away: 'Godoy Cruz', date: '02/11', time: '20:00', jornada: 15, result: null }, { id: 26, home: 'Talleres', away: 'Platense', date: '02/11', time: '17:00', jornada: 15, result: null }, { id: 27, home: 'Sarmiento', away: 'Instituto', date: '02/11', time: '17:00', jornada: 15, result: null }, { id: 39, home: 'Lanús', away: 'San Martín SJ', date: '03/11', time: '19:00', jornada: 15, result: null }, { id: 40, home: 'Rosario Central', away: 'Aldosivi', date: '04/11', time: '21:00', jornada: 15, result: null }, { id: 28, home: 'Deportivo Riestra', away: 'Godoy Cruz', date: '09/11', time: '17:00', jornada: 16, result: null }, { id: 29, home: 'Instituto', away: 'Talleres', date: '09/11', time: '17:00', jornada: 16, result: null }, { id: 30, home: 'Aldosivi', away: 'San Martín SJ', date: '09/11', time: '20:00', jornada: 16, result: null }, { id: 41, home: 'San Lorenzo', away: 'Sarmiento', date: '10/11', time: '19:00', jornada: 16, result: null },
+            // JORNADA 8
+            { id: 31, home: 'Belgrano', away: 'San Martín SJ', date: '11/09', time: '15:00', jornada: 8, result: '0-0', isHistorical: true },
+            { id: 200, home: 'Deportivo Riestra', away: 'Central Córdoba', date: '12/09', time: '19:00', jornada: 8, result: '2-0', isHistorical: true },
+            { id: 201, home: 'Racing', away: 'San Lorenzo', date: '12/09', time: '21:00', jornada: 8, result: '2-0', isHistorical: true },
+            { id: 202, home: 'Huracán', away: 'Vélez Sarsfield', date: '12/09', time: '21:00', jornada: 8, result: '0-0', isHistorical: true },
+            { id: 203, home: 'Newell\'s', away: 'Atlético Tucumán', date: '12/09', time: '17:00', jornada: 8, result: '2-0', isHistorical: true },
+            { id: 117, home: 'Lanús', away: 'Independiente Rivadavia', date: '12/09', time: '19:00', jornada: 8, result: '1-0', isHistorical: true },
+            { id: 1, home: 'Godoy Cruz', away: 'Barracas Central', date: '13/09', time: '14:30', jornada: 8, result: null },
+            { id: 103, home: 'Independiente', away: 'Banfield', date: '13/09', time: '16:45', jornada: 8, result: null },
+            { id: 106, home: 'Estudiantes', away: 'River Plate', date: '13/09', time: '19:00', jornada: 8, result: null },
+            { id: 2, home: 'Sarmiento', away: 'Aldosivi', date: '13/09', time: '21:15', jornada: 8, result: null },
+            { id: 104, home: 'Gimnasia', away: 'Instituto', date: '14/09', time: '15:00', jornada: 8, result: null },
+            { id: 120, home: 'Unión', away: 'Argentinos Jrs', date: '14/09', time: '15:00', jornada: 8, result: null },
+            { id: 110, home: 'Rosario Central', away: 'Boca Jrs.', date: '14/09', time: '17:30', jornada: 8, result: null },
+            { id: 102, home: 'Tigre', away: 'Talleres', date: '14/09', time: '20:00', jornada: 8, result: null },
+            { id: 3, home: 'Defensa y Justicia', away: 'Platense', date: '14/09', time: '20:00', jornada: 8, result: null },
+
+            // JORNADA 9
+            { id: 300, home: 'Deportivo Riestra', away: 'Gimnasia', date: '19/09', time: '17:00', jornada: 9, result: null }, { id: 301, home: 'Huracán', away: 'Racing', date: '19/09', time: '19:00', jornada: 9, result: null }, { id: 4, home: 'San Martín SJ', away: 'Vélez Sarsfield', date: '19/09', time: '19:15', jornada: 9, result: null }, { id: 302, home: 'Lanús', away: 'Platense', date: '19/09', time: '21:15', jornada: 9, result: null }, { id: 5, home: 'Barracas Central', away: 'Sarmiento', date: '20/09', time: '14:30', jornada: 9, result: null }, { id: 303, home: 'Unión', away: 'Independiente Rivadavia', date: '20/09', time: '16:45', jornada: 9, result: null }, { id: 6, home: 'Tigre', away: 'Aldosivi', date: '20/09', time: '19:00', jornada: 9, result: null }, { id: 304, home: 'Atlético Tucumán', away: 'River Plate', date: '20/09', time: '21:15', jornada: 9, result: null }, { id: 305, home: 'Independiente', away: 'San Lorenzo', date: '21/09', time: '14:30', jornada: 9, result: null }, { id: 7, home: 'Godoy Cruz', away: 'Instituto', date: '21/09', time: '16:45', jornada: 9, result: null }, { id: 8, home: 'Rosario Central', away: 'Talleres', date: '21/09', time: '19:00', jornada: 9, result: null }, { id: 306, home: 'Argentinos Jrs', away: 'Banfield', date: '21/09', time: '19:00', jornada: 9, result: null }, { id: 307, home: 'Boca Jrs.', away: 'Central Córdoba', date: '21/09', time: '21:15', jornada: 9, result: null }, { id: 111, home: 'Estudiantes', away: 'Defensa y Justicia', date: '22/09', time: '19:00', jornada: 9, result: null }, { id: 308, home: 'Belgrano', away: 'Newell\'s', date: '22/09', time: '21:00', jornada: 9, result: null },
+
+            // JORNADA 10
+            { id: 309, home: 'Platense', away: 'San Martín SJ', date: '26/09', time: '19:00', jornada: 10, result: null }, { id: 310, home: 'Banfield', away: 'Unión', date: '26/09', time: '19:00', jornada: 10, result: null }, { id: 311, home: 'Central Córdoba', away: 'Tigre', date: '26/09', time: '21:15', jornada: 10, result: null }, { id: 312, home: 'Gimnasia', away: 'Rosario Central', date: '27/09', time: '14:30', jornada: 10, result: null }, { id: 10, home: 'Aldosivi', away: 'Argentinos Jrs', date: '27/09', time: '14:30', jornada: 10, result: null }, { id: 11, home: 'San Lorenzo', away: 'Godoy Cruz', date: '27/09', time: '16:45', jornada: 10, result: null }, { id: 313, home: 'Defensa y Justicia', away: 'Boca Jrs.', date: '27/09', time: '19:00', jornada: 10, result: null }, { id: 12, home: 'Talleres', away: 'Sarmiento', date: '27/09', time: '21:15', jornada: 10, result: null }, { id: 208, home: 'Racing', away: 'Independiente', date: '28/09', time: '15:15', jornada: 10, result: null }, { id: 314, home: 'River Plate', away: 'Deportivo Riestra', date: '28/09', time: '18:00', jornada: 10, result: null }, { id: 315, home: 'Independiente Rivadavia', away: 'Huracán', date: '28/09', time: '19:30', jornada: 10, result: null }, { id: 316, home: 'Instituto', away: 'Lanús', date: '28/09', time: '20:15', jornada: 10, result: null }, { id: 317, home: 'Barracas Central', away: 'Belgrano', date: '29/09', time: '15:30', jornada: 10, result: null }, { id: 206, home: 'Vélez Sarsfield', away: 'Atlético Tucumán', date: '29/09', time: '20:00', jornada: 10, result: null }, { id: 318, home: 'Newell\'s', away: 'Estudiantes', date: '30/09', time: '19:00', jornada: 10, result: null },
+
+            // JORNADA 11
+            { id: 400, home: 'Talleres', away: 'Belgrano', date: '05/10', time: '14:00', jornada: 11, result: null }, { id: 401, home: 'Godoy Cruz', away: 'Independiente', date: '05/10', time: '14:00', jornada: 11, result: null }, { id: 402, home: 'Lanús', away: 'San Lorenzo', date: '05/10', time: '14:00', jornada: 11, result: null }, { id: 403, home: 'San Martín SJ', away: 'Instituto', date: '05/10', time: '14:00', jornada: 11, result: null }, { id: 404, home: 'Atlético Tucumán', away: 'Platense', date: '05/10', time: '14:00', jornada: 11, result: null }, { id: 405, home: 'Deportivo Riestra', away: 'Vélez Sarsfield', date: '05/10', time: '14:00', jornada: 11, result: null }, { id: 15, home: 'Sarmiento', away: 'Gimnasia', date: '05/10', time: '14:00', jornada: 11, result: null }, { id: 406, home: 'Rosario Central', away: 'River Plate', date: '05/10', time: '14:00', jornada: 11, result: null }, { id: 407, home: 'Huracán', away: 'Banfield', date: '05/10', time: '14:00', jornada: 11, result: null }, { id: 408, home: 'Racing', away: 'Independiente Rivadavia', date: '05/10', time: '14:00', jornada: 11, result: null }, { id: 33, home: 'Unión', away: 'Aldosivi', date: '05/10', time: '14:00', jornada: 11, result: null }, { id: 409, home: 'Argentinos Jrs', away: 'Central Córdoba', date: '05/10', time: '14:00', jornada: 11, result: null }, { id: 410, home: 'Tigre', away: 'Defensa y Justicia', date: '05/10', time: '14:00', jornada: 11, result: null }, { id: 411, home: 'Boca Jrs.', away: 'Newell\'s', date: '05/10', time: '14:00', jornada: 11, result: null }, { id: 412, home: 'Estudiantes', away: 'Barracas Central', date: '05/10', time: '14:00', jornada: 11, result: null },
+
+            // JORNADA 12
+            { id: 16, home: 'Independiente Rivadavia', away: 'Godoy Cruz', date: '12/10', time: '14:00', jornada: 12, result: null }, { id: 413, home: 'Vélez Sarsfield', away: 'Rosario Central', date: '12/10', time: '14:00', jornada: 12, result: null }, { id: 18, home: 'Gimnasia', away: 'Talleres', date: '12/10', time: '14:00', jornada: 12, result: null }, { id: 414, home: 'Platense', away: 'Deportivo Riestra', date: '12/10', time: '14:00', jornada: 12, result: null }, { id: 34, home: 'River Plate', away: 'Sarmiento', date: '12/10', time: '14:00', jornada: 12, result: null }, { id: 32, home: 'Instituto', away: 'Atlético Tucumán', date: '12/10', time: '14:00', jornada: 12, result: null }, { id: 35, home: 'San Lorenzo', away: 'San Martín SJ', date: '12/10', time: '14:00', jornada: 12, result: null }, { id: 415, home: 'Belgrano', away: 'Estudiantes', date: '12/10', time: '14:00', jornada: 12, result: null }, { id: 416, home: 'Independiente', away: 'Lanús', date: '12/10', time: '14:00', jornada: 12, result: null }, { id: 417, home: 'Barracas Central', away: 'Boca Jrs.', date: '12/10', time: '14:00', jornada: 12, result: null }, { id: 418, home: 'Defensa y Justicia', away: 'Argentinos Jrs', date: '12/10', time: '14:00', jornada: 12, result: null }, { id: 419, home: 'Newell\'s', away: 'Tigre', date: '12/10', time: '14:00', jornada: 12, result: null }, { id: 420, home: 'Central Córdoba', away: 'Unión', date: '12/10', time: '14:00', jornada: 12, result: null }, { id: 17, home: 'Aldosivi', away: 'Huracán', date: '12/10', time: '14:00', jornada: 12, result: null }, { id: 421, home: 'Banfield', away: 'Racing', date: '12/10', time: '14:00', jornada: 12, result: null },
+
+            // JORNADA 13
+            { id: 422, home: 'Estudiantes', away: 'Gimnasia', date: '19/10', time: '14:00', jornada: 13, result: null }, { id: 19, home: 'Lanús', away: 'Godoy Cruz', date: '19/10', time: '14:00', jornada: 13, result: null }, { id: 36, home: 'San Martín SJ', away: 'Independiente', date: '19/10', time: '14:00', jornada: 13, result: null }, { id: 423, home: 'Atlético Tucumán', away: 'San Lorenzo', date: '19/10', time: '14:00', jornada: 13, result: null }, { id: 20, home: 'Sarmiento', away: 'Vélez Sarsfield', date: '19/10', time: '14:00', jornada: 13, result: null }, { id: 424, home: 'Rosario Central', away: 'Platense', date: '19/10', time: '14:00', jornada: 13, result: null }, { id: 425, home: 'Deportivo Riestra', away: 'Instituto', date: '19/10', time: '14:00', jornada: 13, result: null }, { id: 426, home: 'Huracán', away: 'Central Córdoba', date: '19/10', time: '14:00', jornada: 13, result: null }, { id: 427, home: 'Independiente Rivadavia', away: 'Banfield', date: '19/10', time: '14:00', jornada: 13, result: null }, { id: 428, home: 'Unión', away: 'Defensa y Justicia', date: '19/10', time: '14:00', jornada: 13, result: null }, { id: 429, home: 'Racing', away: 'Aldosivi', date: '19/10', time: '14:00', jornada: 13, result: null }, { id: 21, home: 'Talleres', away: 'River Plate', date: '19/10', time: '14:00', jornada: 13, result: null }, { id: 430, home: 'Tigre', away: 'Barracas Central', date: '19/10', time: '14:00', jornada: 13, result: null }, { id: 431, home: 'Argentinos Jrs', away: 'Newell\'s', date: '19/10', time: '14:00', jornada: 13, result: null }, { id: 432, home: 'Boca Jrs.', away: 'Belgrano', date: '19/10', time: '14:00', jornada: 13, result: null },
+
+            // JORNADA 14
+            { id: 433, home: 'Banfield', away: 'Lanús', date: '02/11', time: '14:00', jornada: 14, result: null }, { id: 23, home: 'Vélez Sarsfield', away: 'Talleres', date: '02/11', time: '14:00', jornada: 14, result: null }, { id: 434, home: 'River Plate', away: 'Gimnasia', date: '02/11', time: '14:00', jornada: 14, result: null }, { id: 24, home: 'Platense', away: 'Sarmiento', date: '02/11', time: '14:00', jornada: 14, result: null }, { id: 435, home: 'Instituto', away: 'Rosario Central', date: '02/11', time: '14:00', jornada: 14, result: null }, { id: 436, home: 'San Lorenzo', away: 'Deportivo Riestra', date: '02/11', time: '14:00', jornada: 14, result: null }, { id: 437, home: 'Independiente', away: 'Atlético Tucumán', date: '02/11', time: '14:00', jornada: 14, result: null }, { id: 22, home: 'Godoy Cruz', away: 'San Martín SJ', date: '02/11', time: '14:00', jornada: 14, result: null }, { id: 38, home: 'Estudiantes', away: 'Boca Jrs.', date: '02/11', time: '14:00', jornada: 14, result: null }, { id: 438, home: 'Belgrano', away: 'Tigre', date: '02/11', time: '14:00', jornada: 14, result: null }, { id: 439, home: 'Barracas Central', away: 'Argentinos Jrs', date: '02/11', time: '14:00', jornada: 14, result: null }, { id: 440, home: 'Newell\'s', away: 'Unión', date: '02/11', time: '14:00', jornada: 14, result: null }, { id: 37, home: 'Defensa y Justicia', away: 'Huracán', date: '02/11', time: '14:00', jornada: 14, result: null }, { id: 441, home: 'Central Córdoba', away: 'Racing', date: '02/11', time: '14:00', jornada: 14, result: null }, { id: 442, home: 'Aldosivi', away: 'Independiente Rivadavia', date: '02/11', time: '14:00', jornada: 14, result: null },
+
+            // JORNADA 15
+            { id: 443, home: 'Boca Jrs.', away: 'River Plate', date: '09/11', time: '14:00', jornada: 15, result: null }, { id: 25, home: 'Atlético Tucumán', away: 'Godoy Cruz', date: '09/11', time: '14:00', jornada: 15, result: null }, { id: 39, home: 'San Martín SJ', away: 'Lanús', date: '09/11', time: '14:00', jornada: 15, result: null }, { id: 40, home: 'Rosario Central', away: 'San Lorenzo', date: '09/11', time: '14:00', jornada: 15, result: null }, { id: 444, home: 'Deportivo Riestra', away: 'Independiente', date: '09/11', time: '14:00', jornada: 15, result: null }, { id: 27, home: 'Sarmiento', away: 'Instituto', date: '09/11', time: '14:00', jornada: 15, result: null }, { id: 26, home: 'Talleres', away: 'Platense', date: '09/11', time: '14:00', jornada: 15, result: null }, { id: 18, home: 'Gimnasia', away: 'Vélez Sarsfield', date: '09/11', time: '14:00', jornada: 15, result: null }, { id: 445, home: 'Banfield', away: 'Aldosivi', date: '09/11', time: '14:00', jornada: 15, result: null }, { id: 16, home: 'Independiente Rivadavia', away: 'Central Córdoba', date: '09/11', time: '14:00', jornada: 15, result: null }, { id: 426, home: 'Huracán', away: 'Newell\'s', date: '09/11', time: '14:00', jornada: 15, result: null }, { id: 429, home: 'Racing', away: 'Defensa y Justicia', date: '09/11', time: '14:00', jornada: 15, result: null }, { id: 428, home: 'Unión', away: 'Barracas Central', date: '09/11', time: '14:00', jornada: 15, result: null }, { id: 431, home: 'Argentinos Jrs', away: 'Belgrano', date: '09/11', time: '14:00', jornada: 15, result: null }, { id: 430, home: 'Tigre', away: 'Estudiantes', date: '09/11', time: '14:00', jornada: 15, result: null },
+
+            // JORNADA 16
+            { id: 446, home: 'Vélez Sarsfield', away: 'River Plate', date: '16/11', time: '14:00', jornada: 16, result: null }, { id: 447, home: 'Platense', away: 'Gimnasia', date: '16/11', time: '14:00', jornada: 16, result: null }, { id: 41, home: 'San Lorenzo', away: 'Sarmiento', date: '16/11', time: '14:00', jornada: 16, result: null }, { id: 30, home: 'Aldosivi', away: 'San Martín SJ', date: '16/11', time: '14:00', jornada: 16, result: null }, { id: 29, home: 'Instituto', away: 'Talleres', date: '16/11', time: '14:00', jornada: 16, result: null }, { id: 448, home: 'Independiente', away: 'Rosario Central', date: '16/11', time: '14:00', jornada: 16, result: null }, { id: 28, home: 'Godoy Cruz', away: 'Deportivo Riestra', date: '16/11', time: '14:00', jornada: 16, result: null }, { id: 19, home: 'Lanús', away: 'Atlético Tucumán', date: '16/11', time: '14:00', jornada: 16, result: null }, { id: 432, home: 'Boca Jrs.', away: 'Tigre', date: '16/11', time: '14:00', jornada: 16, result: null }, { id: 415, home: 'Belgrano', away: 'Unión', date: '16/11', time: '14:00', jornada: 16, result: null }, { id: 439, home: 'Barracas Central', away: 'Huracán', date: '16/11', time: '14:00', jornada: 16, result: null }, { id: 422, home: 'Estudiantes', away: 'Argentinos Jrs', date: '16/11', time: '14:00', jornada: 16, result: null }, { id: 440, home: 'Newell\'s', away: 'Racing', date: '16/11', time: '14:00', jornada: 16, result: null }, { id: 37, home: 'Defensa y Justicia', away: 'Independiente Rivadavia', date: '16/11', time: '14:00', jornada: 16, result: null }, { id: 441, home: 'Central Córdoba', away: 'Banfield', date: '16/11', time: '14:00', jornada: 16, result: null },
         ];
         
         let initialAnnualTableData = [
-            { pos: 1, team: 'River Plate', pts: 46, pj: 23, pg: 12, pe: 10, pp: 1, gf: 35, gc: 13, dg: 22 }, { pos: 2, team: 'Boca Jrs.', pts: 45, pj: 23, pg: 13, pe: 6, pp: 4, gf: 33, gc: 14, dg: 19 }, { pos: 3, team: 'Rosario Central', pts: 45, pj: 22, pg: 12, pe: 9, pp: 1, gf: 26, gc: 10, dg: 16 }, { pos: 4, team: 'Argentinos Jrs', pts: 41, pj: 23, pg: 11, pe: 8, pp: 4, gf: 31, gc: 15, dg: 16 }, { pos: 5, team: 'Deportivo Riestra', pts: 40, pj: 24, pg: 10, pe: 10, pp: 4, gf: 24, gc: 12, dg: 12 }, { pos: 6, team: 'San Lorenzo', pts: 40, pj: 24, pg: 10, pe: 10, pp: 4, gf: 19, gc: 13, dg: 6 }, { pos: 7, team: 'Barracas Central', pts: 40, pj: 23, pg: 11, pe: 7, pp: 5, gf: 31, gc: 26, dg: 5 }, { pos: 8, team: 'Huracán', pts: 39, pj: 24, pg: 10, pe: 9, pp: 5, gf: 24, gc: 18, dg: 6 }, { pos: 9, team: 'Tigre', pts: 35, pj: 23, pg: 10, pe: 5, pp: 8, gf: 24, gc: 19, dg: 5 }, { pos: 10, team: 'Independiente Rivadavia', pts: 35, pj: 23, pg: 9, pe: 8, pp: 6, gf: 28, gc: 26, dg: 2 }, { pos: 11, team: 'Racing', pts: 33, pj: 24, pg: 10, pe: 3, pp: 11, gf: 32, gc: 28, dg: 4 }, { pos: 12, team: 'Estudiantes', pts: 33, pj: 23, pg: 9, pe: 6, pp: 8, gf: 26, gc: 27, dg: -1 }, { pos: 13, team: 'Independiente', pts: 32, pj: 22, pg: 8, pe: 8, pp: 6, gf: 27, gc: 19, dg: 8 }, { pos: 14, team: 'Central Córdoba', pts: 31, pj: 24, pg: 8, pe: 7, pp: 9, gf: 31, gc: 28, dg: 3 }, { pos: 15, team: 'Defensa y Justicia', pts: 31, pj: 23, pg: 8, pe: 7, pp: 8, gf: 26, gc: 27, dg: -1 }, { pos: 16, team: 'Lanús', pts: 30, pj: 23, pg: 7, pe: 9, pp: 7, gf: 19, gc: 18, dg: 1 }, { pos: 17, team: 'Platense', pts: 29, pj: 22, pg: 7, pe: 8, pp: 7, gf: 18, gc: 19, dg: -1 }, { pos: 18, team: 'Vélez Sarsfield', pts: 29, pj: 24, pg: 8, pe: 5, pp: 11, gf: 16, gc: 25, dg: -9 }, { pos: 19, team: 'Unión', pts: 26, pj: 23, pg: 6, pe: 8, pp: 9, gf: 21, gc: 22, dg: -1 }, { pos: 20, team: 'Gimnasia', pts: 26, pj: 23, pg: 7, pe: 5, pp: 11, gf: 14, gc: 23, dg: -9 }, { pos: 21, team: 'Belgrano', pts: 26, pj: 24, pg: 5, pe: 11, pp: 8, gf: 19, gc: 30, dg: -11 }, { pos: 22, team: 'Atlético Tucumán', pts: 25, pj: 23, pg: 7, pe: 4, pp: 12, gf: 25, gc: 27, dg: -2 }, { pos: 23, team: 'Newell\'s', pts: 25, pj: 23, pg: 6, pe: 7, pp: 10, gf: 18, gc: 23, dg: -5 }, { pos: 24, team: 'Banfield', pts: 24, pj: 23, pg: 6, pe: 6, pp: 11, gf: 22, gc: 29, dg: -7 }, { pos: 25, team: 'Instituto', pts: 24, pj: 23, pg: 6, pe: 6, pp: 11, gf: 18, gc: 30, dg: -12 }, { pos: 26, team: 'Godoy Cruz', pts: 23, pj: 23, pg: 4, pe: 11, pp: 8, gf: 15, gc: 28, dg: -13 }, { pos: 27, team: 'Sarmiento', pts: 21, pj: 22, pg: 3, pe: 12, pp: 7, gf: 16, gc: 28, dg: -12 }, { pos: 28, team: 'Talleres', pts: 18, pj: 23, pg: 3, pe: 9, pp: 11, gf: 14, gc: 23, dg: -9 }, { pos: 29, team: 'San Martín SJ', pts: 18, pj: 24, pg: 4, pe: 6, pp: 14, gf: 10, gc: 25, dg: -15 }, { pos: 30, team: 'Aldosivi', pts: 18, pj: 23, pg: 4, pe: 6, pp: 13, gf: 19, gc: 36, dg: -17 },
+            { pos: 1, team: 'River Plate', pts: 46, pj: 23, pg: 12, pe: 10, pp: 1, gf: 35, gc: 13, dg: 22 }, { pos: 2, team: 'Boca Jrs.', pts: 45, pj: 23, pg: 13, pe: 6, pp: 4, gf: 33, gc: 14, dg: 19 }, { pos: 3, team: 'Rosario Central', pts: 45, pj: 22, pg: 12, pe: 9, pp: 1, gf: 26, gc: 10, dg: 16 }, { pos: 4, team: 'Argentinos Jrs', pts: 41, pj: 23, pg: 11, pe: 8, pp: 4, gf: 31, gc: 15, dg: 16 }, { pos: 5, team: 'Deportivo Riestra', pts: 40, pj: 24, pg: 10, pe: 10, pp: 4, gf: 24, gc: 12, dg: 12 }, { pos: 6, team: 'Barracas Central', pts: 40, pj: 23, pg: 11, pe: 7, pp: 5, gf: 31, gc: 26, dg: 5 }, { pos: 7, team: 'Huracán', pts: 39, pj: 24, pg: 10, pe: 9, pp: 5, gf: 24, gc: 18, dg: 6 }, { pos: 8, team: 'San Lorenzo', pts: 39, pj: 24, pg: 10, pe: 9, pp: 5, gf: 19, gc: 15, dg: 4 }, { pos: 9, team: 'Racing', pts: 35, pj: 24, pg: 11, pe: 2, pp: 11, gf: 34, gc: 28, dg: 6 }, { pos: 10, team: 'Tigre', pts: 35, pj: 23, pg: 10, pe: 5, pp: 8, gf: 24, gc: 19, dg: 5 }, { pos: 11, team: 'Independiente Rivadavia', pts: 35, pj: 24, pg: 9, pe: 8, pp: 7, gf: 28, gc: 27, dg: 1 }, { pos: 12, team: 'Lanús', pts: 33, pj: 24, pg: 8, pe: 9, pp: 7, gf: 20, gc: 18, dg: 2 }, { pos: 13, team: 'Estudiantes', pts: 33, pj: 23, pg: 9, pe: 6, pp: 8, gf: 26, gc: 27, dg: -1 }, { pos: 14, team: 'Independiente', pts: 32, pj: 22, pg: 8, pe: 8, pp: 6, gf: 27, gc: 19, dg: 8 }, { pos: 15, team: 'Central Córdoba', pts: 31, pj: 24, pg: 8, pe: 7, pp: 9, gf: 31, gc: 28, dg: 3 }, { pos: 16, team: 'Defensa y Justicia', pts: 31, pj: 23, pg: 8, pe: 7, pp: 8, gf: 26, gc: 27, dg: -1 }, { pos: 17, team: 'Platense', pts: 29, pj: 22, pg: 7, pe: 8, pp: 7, gf: 18, gc: 19, dg: -1 }, { pos: 18, team: 'Vélez Sarsfield', pts: 29, pj: 24, pg: 8, pe: 5, pp: 11, gf: 16, gc: 25, dg: -9 }, { pos: 19, team: 'Newell\'s', pts: 28, pj: 24, pg: 7, pe: 7, pp: 10, gf: 20, gc: 23, dg: -3 }, { pos: 20, team: 'Unión', pts: 26, pj: 23, pg: 6, pe: 8, pp: 9, gf: 21, gc: 22, dg: -1 }, { pos: 21, team: 'Gimnasia', pts: 26, pj: 23, pg: 7, pe: 5, pp: 11, gf: 14, gc: 23, dg: -9 }, { pos: 22, team: 'Belgrano', pts: 26, pj: 24, pg: 5, pe: 11, pp: 8, gf: 19, gc: 30, dg: -11 }, { pos: 23, team: 'Atlético Tucumán', pts: 25, pj: 24, pg: 7, pe: 4, pp: 13, gf: 25, gc: 29, dg: -4 }, { pos: 24, team: 'Banfield', pts: 24, pj: 23, pg: 6, pe: 6, pp: 11, gf: 22, gc: 29, dg: -7 }, { pos: 25, team: 'Instituto', pts: 24, pj: 23, pg: 6, pe: 6, pp: 11, gf: 18, gc: 30, dg: -12 }, { pos: 26, team: 'Godoy Cruz', pts: 23, pj: 23, pg: 4, pe: 11, pp: 8, gf: 15, gc: 28, dg: -13 }, { pos: 27, team: 'Sarmiento', pts: 21, pj: 22, pg: 3, pe: 12, pp: 7, gf: 16, gc: 28, dg: -12 }, { pos: 28, team: 'Talleres', pts: 18, pj: 23, pg: 3, pe: 9, pp: 11, gf: 14, gc: 23, dg: -9 }, { pos: 29, team: 'San Martín SJ', pts: 18, pj: 24, pg: 4, pe: 6, pp: 14, gf: 10, gc: 25, dg: -15 }, { pos: 30, team: 'Aldosivi', pts: 18, pj: 23, pg: 4, pe: 6, pp: 13, gf: 19, gc: 36, dg: -17 },
+        ];
+
+        const initialPromediosData = [
+            { pos: 1, team: 'River Plate', prom: 1.914, pts: 201, pj: 105, s23: 85, s24: 70, s25: 46 }, { pos: 2, team: 'Boca Jrs.', prom: 1.657, pts: 174, pj: 105, s23: 62, s24: 67, s25: 45 }, { pos: 3, team: 'Racing', prom: 1.557, pts: 165, pj: 106, s23: 60, s24: 70, s25: 35 }, { pos: 4, team: 'Rosario Central', prom: 1.510, pts: 157, pj: 104, s23: 65, s24: 47, s25: 45 }, { pos: 5, team: 'Estudiantes', prom: 1.505, pts: 158, pj: 105, s23: 62, s24: 63, s25: 33 }, { pos: 6, team: 'Talleres', prom: 1.495, pts: 157, pj: 105, s23: 67, s24: 72, s25: 18 }, { pos: 7, team: 'Vélez Sarsfield', prom: 1.453, pts: 154, pj: 106, s23: 49, s24: 76, s25: 29 }, { pos: 8, team: 'Argentinos Jrs', prom: 1.438, pts: 151, pj: 105, s23: 54, s24: 56, s25: 41 }, { pos: 9, team: 'Huracán', prom: 1.434, pts: 152, pj: 106, s23: 51, s24: 62, s25: 39 }, { pos: 10, team: 'Godoy Cruz', prom: 1.429, pts: 150, pj: 105, s23: 63, s24: 64, s25: 23 }, { pos: 11, team: 'Lanús', prom: 1.406, pts: 149, pj: 106, s23: 57, s24: 59, s25: 33 }, { pos: 12, team: 'Independiente', prom: 1.404, pts: 146, pj: 104, s23: 51, s24: 63, s25: 32 }, { pos: 13, team: 'Defensa y Justicia', prom: 1.400, pts: 147, pj: 105, s23: 58, s24: 58, s25: 31 }, { pos: 14, team: 'San Lorenzo', prom: 1.396, pts: 148, pj: 106, s23: 64, s24: 45, s25: 39 }, { pos: 15, team: 'Deportivo Riestra', prom: 1.354, pts: 88, pj: 65, s23: 0, s24: 48, s25: 40 }, { pos: 16, team: 'Platense', prom: 1.346, pts: 140, pj: 104, s23: 54, s24: 57, s25: 29 }, { pos: 17, team: 'Barracas Central', prom: 1.314, pts: 138, pj: 105, s23: 49, s24: 49, s25: 40 }, { pos: 18, team: 'Unión', prom: 1.257, pts: 132, pj: 105, s23: 46, s24: 60, s25: 26 }, { pos: 19, team: 'Independiente Rivadavia', prom: 1.246, pts: 81, pj: 65, s23: 0, s24: 46, s25: 35 }, { pos: 20, team: 'Belgrano', prom: 1.245, pts: 132, pj: 106, s23: 57, s24: 49, s25: 26 }, { pos: 21, team: 'Instituto', prom: 1.229, pts: 129, pj: 105, s23: 52, s24: 53, s25: 24 }, { pos: 22, team: 'Newell\'s', prom: 1.226, pts: 130, pj: 106, s23: 53, s24: 49, s25: 28 }, { pos: 23, team: 'Atlético Tucumán', prom: 1.217, pts: 129, pj: 106, s23: 54, s24: 50, s25: 25 }, { pos: 24, team: 'Tigre', prom: 1.152, pts: 121, pj: 105, s23: 47, s24: 39, s25: 35 }, { pos: 25, team: 'Central Córdoba', prom: 1.142, pts: 121, pj: 106, s23: 48, s24: 42, s25: 31 }, { pos: 26, team: 'Gimnasia', prom: 1.133, pts: 119, pj: 105, s23: 45, s24: 48, s25: 26 }, { pos: 27, team: 'Banfield', prom: 1.124, pts: 118, pj: 105, s23: 53, s24: 41, s25: 24 }, { pos: 28, team: 'Sarmiento', prom: 0.981, pts: 102, pj: 104, s23: 46, s24: 35, s25: 21 }, { pos: 29, team: 'Aldosivi', prom: 0.783, pts: 18, pj: 23, s23: 0, s24: 0, s25: 18 }, { pos: 30, team: 'San Martín SJ', prom: 0.750, pts: 18, pj: 24, s23: 0, s24: 0, s25: 18 },
         ];
         
         let annualTableData = [];
+        let promediosTableData = [];
         let baseTableForSim;
+        let basePromediosForSim;
         const headerTeams = ['Talleres', 'Sarmiento', 'San Martín SJ', 'Aldosivi', 'Godoy Cruz'];
 
         // --- UTILS ---
         const getTeamInitials = (teamName) => teamColors[teamName]?.initials || teamName;
-        const getDayOfWeek = (dateString) => { const [d, m] = dateString.split('/'); const date = new Date(new Date().getFullYear(), m - 1, d); return isNaN(date.getTime()) ? '' : ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'][date.getDay()]; };
+        const getDayOfWeek = (dateString) => { const [d, m] = dateString.split('/'); const date = new Date(2025, m - 1, d); return isNaN(date.getTime()) ? '' : ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'][date.getDay()]; };
         const getTeamColorDiv = (teamName) => {
             const c = teamColors[teamName]; if (!c) return `<div class="color-indicator" style="background-color: transparent; border: 1px solid #ccc;"></div>`;
             const style = `--color1: ${c.primary}; --color2: ${c.secondary};` + (c.tertiary ? ` --color3: ${c.tertiary};` : '');
@@ -201,52 +296,67 @@
             container.innerHTML = buttonsHTML;
         };
 
+        const renderFixtureSubTabs = () => {
+            const container = document.getElementById('fixture-sub-tabs-container');
+            container.innerHTML = '';
+            const jornadas = [...new Set(allMatches.map(m => m.jornada))].sort((a,b) => a-b);
+            jornadas.forEach(j => {
+                container.innerHTML += `<button class="sub-tab-btn text-sm" onclick="showFixtureByDate(${j}, this)">Fecha ${j}</button>`
+            });
+        };
+
         const renderMatches = (matchesToRender) => {
             const body = document.getElementById('fixture-body'); body.innerHTML = '';
             if (matchesToRender.length === 0) { body.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-slate-400">No hay partidos para mostrar.</td></tr>`; return; }
-            const grouped = matchesToRender.reduce((acc, m) => { (acc[`Fecha ${m.jornada}`] = acc[`Fecha ${m.jornada}`] || []).push(m); return acc; }, {});
-            Object.keys(grouped).sort((a, b) => parseInt(a.split(' ')[1]) - parseInt(b.split(' ')[1])).forEach(jornada => {
-                const titleRow = body.insertRow(); titleRow.innerHTML = `<td colspan="6" class="px-2 py-2 font-bold text-white bg-slate-800">${jornada}</td>`;
-                grouped[jornada].forEach(match => {
-                    const isHeaderMatch = headerTeams.includes(match.home) && headerTeams.includes(match.away);
-                    const row = body.insertRow();
-                    row.className = 'hover:bg-slate-800/60 cursor-pointer' + (isHeaderMatch ? ' bg-blue-900/40' : '');
-                    row.setAttribute('onclick', `event.target.tagName.toLowerCase() !== 'input' && toggleDetails('details-${match.id}')`);
-                    const homeScore = match.result ? match.result.split('-')[0] : '';
-                    const awayScore = match.result ? match.result.split('-')[1] : '';
-                    row.innerHTML = `
-                        <td class="py-3 text-left text-slate-300">${renderTeamDisplay(match.home, '', true)}</td>
-                        <td class="py-3 text-center">
-                           <div class="flex justify-center items-center gap-1">
-                                <input id="home-score-${match.id}" type="number" min="0" value="${homeScore}" oninput="updateResult(${match.id})"
-                                       class="w-10 h-10 p-2 text-center font-bold text-lg border-2 border-slate-600 rounded-md bg-slate-900 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <input id="away-score-${match.id}" type="number" min="0" value="${awayScore}" oninput="updateResult(${match.id})"
-                                       class="w-10 h-10 p-2 text-center font-bold text-lg border-2 border-slate-600 rounded-md bg-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            </div>
-                        </td>
-                        <td class="py-3 text-right text-slate-300">${renderTeamDisplay(match.away, 'justify-end', true)}</td>
-                        <td class="py-3 text-center text-slate-400">${getDayOfWeek(match.date)} ${match.date}</td>
-                        <td class="py-3 text-center text-slate-400">${match.time}</td>
-                        <td class="py-3 text-center text-slate-400 text-lg">&#9662;</td>
-                    `;
-                    const detailsRow = body.insertRow();
-                    detailsRow.id = `details-${match.id}`;
-                    detailsRow.className = 'hidden';
-                    detailsRow.innerHTML = `<td colspan="6" class="px-6 py-4 details-panel"><h4 class="font-bold mb-2">Detalles del Partido</h4><p><strong>Partido:</strong> ${match.home} vs ${match.away}</p><p><strong>Torneo:</strong> Liga Profesional</p></td>`;
-                });
+            matchesToRender.forEach(match => {
+                const isHeaderMatch = headerTeams.includes(match.home) || headerTeams.includes(match.away);
+                const row = body.insertRow();
+                row.className = 'hover:bg-slate-800/60 cursor-pointer' + (isHeaderMatch && document.querySelector('.team-filter-btn.active').getAttribute('onclick').includes('All') ? ' bg-blue-900/40' : '');
+                row.setAttribute('onclick', `event.target.tagName.toLowerCase() !== 'input' && toggleDetails('details-${match.id}')`);
+                const homeScore = match.result ? match.result.split('-')[0] : '';
+                const awayScore = match.result ? match.result.split('-')[1] : '';
+                row.innerHTML = `
+                    <td class="py-3 text-left text-slate-300">${renderTeamDisplay(match.home, '', true)}</td>
+                    <td class="py-3 text-center">
+                       <div class="flex justify-center items-center gap-1">
+                            <input id="home-score-${match.id}" type="number" min="0" value="${homeScore}" oninput="updateResult(${match.id})"
+                                   class="w-10 h-10 p-2 text-center font-bold text-lg border-2 border-slate-600 rounded-md bg-slate-900 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <input id="away-score-${match.id}" type="number" min="0" value="${awayScore}" oninput="updateResult(${match.id})"
+                                   class="w-10 h-10 p-2 text-center font-bold text-lg border-2 border-slate-600 rounded-md bg-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </td>
+                    <td class="py-3 text-right text-slate-300">${renderTeamDisplay(match.away, 'justify-end', true)}</td>
+                    <td class="py-3 text-center text-slate-400">${getDayOfWeek(match.date)} ${match.date}</td>
+                    <td class="py-3 text-center text-slate-400">${match.time}</td>
+                    <td class="py-3 text-center text-slate-400 text-lg">&#9662;</td>
+                `;
+                const detailsRow = body.insertRow();
+                detailsRow.id = `details-${match.id}`;
+                detailsRow.className = 'hidden';
+                detailsRow.innerHTML = `<td colspan="6" class="px-6 py-4 details-panel"><h4 class="font-bold mb-2">Detalles del Partido</h4><p><strong>Partido:</strong> ${match.home} vs ${match.away}</p><p><strong>Torneo:</strong> Liga Profesional</p></td>`;
             });
         };
 
         const renderAnnualTable = () => {
             const body = document.getElementById('annual-table-body'); body.innerHTML = '';
-            annualTableData.sort((a, b) => b.pts - a.pts || (b.dg - a.dg) || (b.gf - a.gf));
-            const descendingTeams = [...annualTableData].slice(-2).map(t => t.team);
+            
+            const sortedPromedios = [...promediosTableData].sort((a, b) => a.prom - b.prom);
+            const lastPromedioTeam = sortedPromedios.length > 0 ? sortedPromedios[0].team : null;
+            const lastAnnualTeam = annualTableData.length > 0 ? annualTableData[annualTableData.length - 1].team : null;
+            
+            let relegatedByAnnual;
+            if (lastPromedioTeam && lastAnnualTeam && lastPromedioTeam === lastAnnualTeam) {
+                relegatedByAnnual = annualTableData.length > 1 ? annualTableData[annualTableData.length - 2].team : null;
+            } else {
+                relegatedByAnnual = lastAnnualTeam;
+            }
+
             annualTableData.forEach((team, index) => {
                 const row = body.insertRow();
                 let rowClass = '';
                 if (index <= 2) { rowClass = 'bg-yellow-500/10'; } 
                 else if (index >= 3 && index <= 8) { rowClass = 'bg-gray-500/10'; }
-                if (descendingTeams.includes(team.team)) { rowClass = 'bg-red-900/40 text-red-300';}
+                if (team.team === relegatedByAnnual) { rowClass = 'bg-red-900/40 text-red-300';}
                 row.className = rowClass;
                 const dgClass = team.dg > 0 ? 'text-green-400' : (team.dg < 0 ? 'text-red-400' : 'text-slate-400');
                 row.innerHTML = `
@@ -264,6 +374,52 @@
             });
         };
 
+        const renderTalleresTable = () => {
+            const body = document.getElementById('talleres-table-body'); body.innerHTML = '';
+            const lastTen = annualTableData.slice(-10);
+            const lastAnnualTeam = annualTableData[annualTableData.length - 1];
+            lastTen.forEach((team) => {
+                const row = body.insertRow();
+                if(team.team === lastAnnualTeam.team) {
+                    row.className = 'bg-red-900/40 text-red-300';
+                }
+                 const dgClass = team.dg > 0 ? 'text-green-400' : (team.dg < 0 ? 'text-red-400' : 'text-slate-400');
+                row.innerHTML = `
+                    <td class="px-2 py-3 font-semibold text-center text-slate-400">${team.pos}</td>
+                    <td class="px-2 py-3 text-left text-slate-300">${renderTeamDisplay(team.team)}</td>
+                    <td class="px-2 py-3 font-bold text-center text-white">${team.pts}</td>
+                    <td class="px-2 py-3 text-center text-slate-400">${team.pj}</td>
+                    <td class="hidden sm:table-cell px-2 py-3 text-center text-slate-400">${team.pg}</td>
+                    <td class="hidden sm:table-cell px-2 py-3 text-center text-slate-400">${team.pe}</td>
+                    <td class="hidden sm:table-cell px-2 py-3 text-center text-slate-400">${team.pp}</td>
+                    <td class="hidden sm:table-cell px-2 py-3 text-center text-slate-400">${team.gf}</td>
+                    <td class="hidden sm:table-cell px-2 py-3 text-center text-slate-400">${team.gc}</td>
+                    <td class="px-2 py-3 font-semibold text-center ${dgClass}">${team.dg}</td>
+                `;
+            });
+        };
+
+        const renderPromediosTable = () => {
+            const body = document.getElementById('promedios-table-body'); body.innerHTML = '';
+            promediosTableData.sort((a,b) => b.prom - a.prom);
+            promediosTableData.forEach((team, index) => {
+                const row = body.insertRow();
+                if (index + 1 === 30) {
+                    row.className = 'bg-red-900/40 text-red-300';
+                }
+                row.innerHTML = `
+                    <td class="px-2 py-3 font-semibold text-center text-slate-400">${index + 1}</td>
+                    <td class="px-2 py-3 text-left text-slate-300">${renderTeamDisplay(team.team)}</td>
+                    <td class="px-2 py-3 font-bold text-center text-white">${team.prom.toFixed(3)}</td>
+                    <td class="px-2 py-3 text-center text-slate-400">${team.pts}</td>
+                    <td class="px-2 py-3 text-center text-slate-400">${team.pj}</td>
+                    <td class="hidden sm:table-cell px-2 py-3 text-center text-slate-400">${team.s23}</td>
+                    <td class="hidden sm:table-cell px-2 py-3 text-center text-slate-400">${team.s24}</td>
+                    <td class="px-2 py-3 text-center text-slate-400">${team.s25}</td>
+                `;
+            });
+        };
+
         // --- LOGIC & EVENT HANDLERS ---
         window.updateResult = (matchId) => {
             const match = allMatches.find(m => m.id == matchId);
@@ -275,19 +431,42 @@
             } else {
                 match.result = null;
             }
-            recalculateTable();
+            recalculateTables();
+        };
+
+        window.restoreResults = () => {
+            allMatches.forEach(match => {
+                if (!match.isHistorical) {
+                    match.result = null;
+                }
+            });
+            const activeFilterBtn = document.querySelector('.team-filter-btn.active');
+            const activeTeamFilter = activeFilterBtn.getAttribute('onclick').match(/'(.*?)'/)[1];
+
+            if (activeTeamFilter === 'All') {
+                const activeSubTab = document.querySelector('.sub-tab-btn.active');
+                if (activeSubTab) {
+                    const jornada = parseInt(activeSubTab.textContent.split(' ')[1]);
+                    const filtered = allMatches.filter(m => m.jornada === jornada);
+                    renderMatches(filtered);
+                } else {
+                    const filtered = allMatches.filter(m => m.jornada === 8);
+                    renderMatches(filtered);
+                }
+            } else {
+                const filtered = allMatches.filter(m => m.home === activeTeamFilter || m.away === activeTeamFilter);
+                renderMatches(filtered);
+            }
+            recalculateTables();
         };
         
-        const recalculateTable = () => {
-            // Start with a deep copy of the base table data
-            let tempTable = JSON.parse(JSON.stringify(baseTableForSim));
-            
-            // Apply the results of all matches in the fixture
+        const recalculateTables = () => {
+            let tempAnnualTable = JSON.parse(JSON.stringify(baseTableForSim));
             allMatches.forEach(match => {
                 if (match.result) { 
                     const [homeScore, awayScore] = match.result.split('-').map(Number);
-                    const homeTeam = tempTable.find(t => t.team === match.home);
-                    const awayTeam = tempTable.find(t => t.team === match.away);
+                    const homeTeam = tempAnnualTable.find(t => t.team === match.home);
+                    const awayTeam = tempAnnualTable.find(t => t.team === match.away);
                     if (homeTeam && awayTeam) {
                         homeTeam.pj += 1; awayTeam.pj += 1;
                         homeTeam.gf += homeScore; awayTeam.gf += awayScore;
@@ -298,20 +477,69 @@
                     }
                 }
             });
+            tempAnnualTable.forEach(team => { team.dg = team.gf - team.gc; });
+            annualTableData = tempAnnualTable;
+            annualTableData.sort((a, b) => b.pts - a.pts || (b.dg - a.dg) || (b.gf - a.gf));
+            annualTableData.forEach((team, index) => team.pos = index + 1);
+
+            let tempPromedios = JSON.parse(JSON.stringify(basePromediosForSim));
+            annualTableData.forEach(annualTeam => {
+                const promedioTeam = tempPromedios.find(p => p.team === annualTeam.team);
+                if(promedioTeam) {
+                    promedioTeam.s25 = annualTeam.pts;
+                    promedioTeam.pts = promedioTeam.s23 + promedioTeam.s24 + promedioTeam.s25;
+                    const basePj = initialPromediosData.find(p => p.team === annualTeam.team).pj;
+                    const historicalGames = _getHistoricalGames(annualTeam.team);
+                    promedioTeam.pj = basePj - historicalGames + annualTeam.pj;
+                    if (promedioTeam.pj > 0) {
+                        promedioTeam.prom = promedioTeam.pts / promedioTeam.pj;
+                    } else {
+                        promedioTeam.prom = 0;
+                    }
+                }
+            });
+            promediosTableData = tempPromedios;
             
-            tempTable.forEach(team => { team.dg = team.gf - team.gc; });
-            annualTableData = tempTable;
             renderAnnualTable();
+            renderTalleresTable();
+            renderPromediosTable();
         };
+
+        const _getHistoricalGames = (teamName) => {
+            return allMatches.filter(m => m.isHistorical && (m.home === teamName || m.away === teamName)).length;
+        }
         
         window.toggleDetails = (id) => document.getElementById(id)?.classList.toggle('hidden');
+        
         window.filterMatches = (team) => {
+            const subTabs = document.getElementById('fixture-sub-tabs-container');
             document.querySelectorAll('.team-filter-btn').forEach(b => b.classList.remove('active'));
             const btn = document.querySelector(`.team-filter-btn[onclick="filterMatches('${team}')"]`);
             if(btn) btn.classList.add('active');
-            const filtered = (team === 'All') ? allMatches : allMatches.filter(m => m.home === team || m.away === team);
-            renderMatches(filtered);
+            
+            if(team === 'All') {
+                subTabs.style.display = 'flex';
+                if(!subTabs.hasChildNodes()){
+                    renderFixtureSubTabs();
+                }
+                const firstSubTab = document.querySelector('.sub-tab-btn');
+                if(firstSubTab) {
+                   firstSubTab.click();
+                }
+            } else {
+                subTabs.style.display = 'none';
+                const filtered = allMatches.filter(m => m.home === team || m.away === team);
+                renderMatches(filtered);
+            }
         };
+
+        window.showFixtureByDate = (jornada, btn) => {
+             document.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active'));
+             btn.classList.add('active');
+             const filtered = allMatches.filter(m => m.jornada === jornada);
+             renderMatches(filtered);
+        };
+
         window.showTab = (tabId, btn) => {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
             document.getElementById(tabId).classList.remove('hidden');
@@ -321,11 +549,9 @@
         
         // --- INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', () => {
-            // This is our true starting point for simulations, a deep copy.
             baseTableForSim = JSON.parse(JSON.stringify(initialAnnualTableData));
-            
-            // Adjust the base data by REMOVING the stats of any historical matches,
-            // because the recalculateTable function will add them back in.
+            basePromediosForSim = JSON.parse(JSON.stringify(initialPromediosData));
+
             allMatches.filter(m => m.isHistorical).forEach(match => {
                 const homeTeam = baseTableForSim.find(t => t.team === match.home);
                 const awayTeam = baseTableForSim.find(t => t.team === match.away);
@@ -341,8 +567,7 @@
             });
 
             renderFilterButtons();
-            recalculateTable(); // Initial calculation
-            renderMatches(allMatches);
+            recalculateTables(); 
 
             const fixtureTabBtn = document.querySelector('.tab-btn');
             showTab('fixture-container', fixtureTabBtn);
